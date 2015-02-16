@@ -23,8 +23,6 @@ class DeclaredMeta(type):
     and then removes from the class namespace.
     '''
 
-    is_lazy = False
-
     @classmethod
     def __prepare__(metacls, name, bases, **kwds):
         return OrderedDict()
@@ -44,14 +42,16 @@ class DeclaredMeta(type):
         for _name in marks_dict:
             del namespace[_name]
 
-        if cls.is_lazy:
+        is_lazy = any(isinstance(mark, declare) for mark in marks_dict.values())
+
+        if is_lazy:
             def process_declared(self):
                 return cls.process_declared(self, marks_dict)
 
             namespace['process_declared'] = process_declared
 
         klass = type.__new__(cls, name, bases, namespace)
-        if not cls.is_lazy:
+        if not is_lazy:
             cls.process_declared(klass, marks_dict)
 
         return klass
@@ -77,12 +77,6 @@ class DeclaredMeta(type):
                 setattr(owner, collect_into, OrderedDict([(key, build)]))
             else:
                 getattr(owner, collect_into)[key] = build
-
-
-class LazyDeclaredMeta(DeclaredMeta):
-
-    is_lazy = True
-
 
 class declare(Mark):
     '''Lazy declaration.'''
