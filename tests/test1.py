@@ -11,7 +11,7 @@ class custom(mark):
         self.value = f()
         return self
 
-    def build_me(self, *args):
+    def build(self, *args):
         return int(self.value)
 
 
@@ -23,6 +23,8 @@ class MarkedApp(metaclass=DeclaredMeta):
     def mark3():
         return 2
 
+from util import case
 
-assert MarkedApp._declared_numbers == \
-        OrderedDict([('mark1', 1), ('mark2', 1), ('mark3', 2)])
+case.assertSequenceEqual(
+    MarkedApp._declared_numbers,
+    OrderedDict([('mark1', 1), ('mark2', 1), ('mark3', 2)]))

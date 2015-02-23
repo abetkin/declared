@@ -12,7 +12,7 @@ class Mark(metaclass=ABCMeta):
     def __init__(self, **kwds):
         self.__dict__.update(kwds)
 
-    def build_me(self, marks, owner):
+    def build(self, marks, owner):
         # can raise SkipMark
         return self
 
@@ -59,24 +59,28 @@ class DeclaredMeta(type):
     @classmethod
     def process_declared(cls, owner, marks_dict):
         all_marks = list(marks_dict.values())
+        created_attrs = set() # TODO write comments
         for key, mark in marks_dict.items():
+            # if not isinstance(owner, type):
             if Mark in mark.__class__.__mro__:
                 mark_type = mark.__class__
             else:
                 mark_type = getattr(owner, 'default_mark', Mark)
             try:
                 # build mark
-                build = mark_type.build_me(mark, all_marks, owner)
+                build = mark_type.build(mark, all_marks, owner)
             except SkipMark:
                 continue
             collect_into = mark_type.collect_into # where to store mark
             if callable(collect_into):
                 collect_into = collect_into(mark)
 
-            if not collect_into in owner.__dict__:
+            if collect_into not in created_attrs:
+                created_attrs.add(collect_into)
                 setattr(owner, collect_into, OrderedDict([(key, build)]))
             else:
                 getattr(owner, collect_into)[key] = build
+
 
 class declare(Mark):
     '''Lazy declaration.'''
@@ -96,11 +100,11 @@ class declare(Mark):
             return collect_into(mark)
         return collect_into
 
-    def build_me(self, marks, owner):
+    def build(self, marks, owner):
         self.evaluated = self.func(owner)
         self.owner = owner
         if self.mark_type:
-            return self.mark_type.build_me(self.evaluated, marks, owner)
+            return self.mark_type.build(self.evaluated, marks, owner)
         return self.evaluated
 
     def __init__(self, mark_type=None):
@@ -109,3 +113,6 @@ class declare(Mark):
     def __call__(self, func):
         self.func = func
         return self
+
+class Declared(metaclass=DeclaredMeta):
+    pass
