@@ -130,10 +130,10 @@ out of them (or a couple of <code>OrderedDict</code>'s).</p>
 and then call <code>.process_declared()</code> from the instance of your class or from the class itself.</p>
 <p>Inspired by the declarations processing in the <code>django-rest-framework</code>.</p>
 <hr />
-<p><em>Warning:</em> Only <strong>Python 3</strong> is supported yet.</p>
+<p>Warning: Only <strong>Python 3</strong> is supported yet.</p>
 <hr />
 <h2 id="examples">Examples</h2>
-<p>Let's define a mark for time:</p>
+<p>Let's define a mark for a time point:</p>
 <pre><code>from time import strptime
 from declared import Mark
 
@@ -157,7 +157,7 @@ class DailyRoutine(metaclass=DeclaredMeta):
 &gt;&gt;&gt; DailyRoutine._timepoins
 OrderedDict([('breakfast', time.struct_time(...)), ('lunch', time.struct_time(...))])
 </code></pre>
-<p>Not that produced <code>struct_time</code> instances are extra useful, it just demonstrates that a mark can be built
+<p>Not that produced <code>struct_time</code> instances are extra useful, but it demonstrates that a mark can provide a build method
 (by default <code>.build()</code> method returns the mark itself. The passed arguments to <code>.build()</code> are:</p>
 <ul>
 <li><code>marks</code>: A list of of all marks</li>
@@ -224,7 +224,7 @@ class Greetings(Declared):
     def in_english(owner):
         return Greeting(text='Hello, %s' % owner.name)
 </code></pre>
-<p>If <code>DeclaredMeta</code> finds at least one mark declared in such way, it will not process marks. Instead
+<p>If <code>DeclaredMeta</code> finds at least one mark declared in such way, it will not process marks. Instead,
 it will add <code>.process_declared()</code> method to the owner class. Marks can be as lazy as you want: you will
 call <code>.process_declared()</code> yourself:</p>
 <pre><code>&gt;&gt;&gt; greetings = Greetings('John')
@@ -238,8 +238,8 @@ OrderedDict([('in_english', Hello, John)])
 <pre><code class="python">Klass.process_declared(Klass)
 </code></pre>
 
-<p>You can specify the mark class with the first argument to <code>declared</code>, e. g. <code>@declare(Greeting)</code>. If that class defines a <code>.build()</code>
-method, the lazily returned value will be built with it. That could help solve the problem that we solved previously with
+<p>You can specify the mark class with the first argument to the decorator: <code>@declare(Greeting)</code>. If that class defines a <code>.build()</code>
+method, then the lazily returned value will be built with it. That could help solve the problem that we solved previously with
 setting <code>default_mark</code> attribute on the instance.</p>
 <p>Example:</p>
 <pre><code>class Greeting(Mark):

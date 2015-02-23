@@ -162,12 +162,12 @@ class Time:
         hour = (self.hour + other.hour + hour) % 24
         return self.__class__(hour, min)
 </code></pre>
-<p>As you understand, it can add time intervals:</p>
+<p>As you understand, you can add time intervals:</p>
 <pre><code class="python">&gt;&gt;&gt; Time(1, 34) + '23:55'
 1:29
 </code></pre>
 
-<p>Now we are going to define a class for time interval mark. We want it to understand strings as well:</p>
+<p>Then we are going to define a class for the respective mark. We want it to understand strings as well:</p>
 <pre><code>from declared import SkipMark
 
 class time(Mark):
@@ -177,13 +177,13 @@ class time(Mark):
         self.value = value
 
     def build(mark, marks, owner):
+        if isinstance(mark, Time):
+            return mark
         if isinstance(mark, str):
             try:
                 return Time.parse(mark)
             except ParseError:
                 raise SkipMark
-        if isinstance(mark, Time):
-            return mark
         return Time.parse(mark.value)
 
 time.register(str)
@@ -198,7 +198,9 @@ time.register(Time)
 <h2 id="lazy-declaration">Lazy declaration</h2>
 <p>Let's try to write a daily routine with floating time of getting up. Here is what
 it will look like using lazy declarations:</p>
-<pre><code>class MyDailyRoutine(Declared):
+<pre><code>from declared import Declared, declare
+
+class MyDailyRoutine(Declared):
 
     def __init__(self, get_up):
         if isinstance(get_up, str):
