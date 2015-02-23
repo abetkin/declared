@@ -48,9 +48,12 @@ class time(Mark):
                 return Time.parse(mark)
             except ParseError:
                 raise SkipMark
-        return Mark.parse(mark.value)
+        if isinstance(mark, Time):
+            return mark
+        return Time.parse(mark.value)
 
 time.register(str)
+time.register(Time)
 
 class DailyRoutine(metaclass=DeclaredMeta):
     default_mark = time
