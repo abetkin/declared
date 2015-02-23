@@ -50,11 +50,39 @@
         <!-- Expanded navigation -->
         <div class="navbar-collapse collapse">
             
+                <!-- Main navigation -->
+                <ul class="nav navbar-nav">
+                
+                
+                    <li class="active">
+                        <a href=".">Home</a>
+                    </li>
+                
+                
+                
+                    <li >
+                        <a href="examples/">Examples</a>
+                    </li>
+                
+                
+                </ul>
+            
 
             
             <!-- Search, Navigation and Repo links -->
             <ul class="nav navbar-nav navbar-right">
                 
+                
+                <li class="disabled">
+                    <a rel="next" >
+                        <i class="fa fa-arrow-left"></i> Previous
+                    </a>
+                </li>
+                <li >
+                    <a rel="prev" href="examples/">
+                        Next <i class="fa fa-arrow-right"></i>
+                    </a>
+                </li>
                 
                 
                 <li>
@@ -83,7 +111,7 @@
         
             <li><a href="#examples">Examples</a></li>
         
-            <li><a href="#lazy-declaration">Lazy declaration</a></li>
+            <li><a href="#lazy-declarations">Lazy declarations</a></li>
         
     
     </ul>
@@ -100,7 +128,9 @@ out of them (or a couple of <code>OrderedDict</code>'s).</p>
 <p>That special attributes are recognized by being <code>Mark</code> instances and therefore will be called marks.</p>
 <p>Supports <strong>"lazy" processing</strong> of the declared marks. To use it, you just declare at least one "lazy" mark
 and then call <code>.process_declared()</code> from the instance of your class or from the class itself.</p>
-<p>Is inspired by the declarations processing in the <code>django-rest-framework</code>.</p>
+<p>Inspired by the declarations processing in the <code>django-rest-framework</code>.</p>
+<hr />
+<p><em>Warning:</em> Only <strong>Python 3</strong> is supported yet.</p>
 <hr />
 <h2 id="examples">Examples</h2>
 <p>Let's define a mark for time:</p>
@@ -109,7 +139,7 @@ from declared import Mark
 
 class Time(Mark):
 
-    collect_into = '_time_marks'
+    collect_into = '_timepoints'
 
     def __init__(self, value):
         self.value = value
@@ -124,7 +154,7 @@ class DailyRoutine(metaclass=DeclaredMeta):
     breakfast = Time('9:00')
     lunch = Time('12:00')
 
-&gt;&gt;&gt; DailyRoutine._time_marks
+&gt;&gt;&gt; DailyRoutine._timepoins
 OrderedDict([('breakfast', time.struct_time(...)), ('lunch', time.struct_time(...))])
 </code></pre>
 <p>Not that produced <code>struct_time</code> instances are extra useful, it just demonstrates that a mark can be built
@@ -172,7 +202,65 @@ between our <code>Serializer</code> and the original one, from the <code>rest_fr
 OrderedDict([('name', CharField()), ('age', IntegerField())])
 </code></pre>
 <hr />
-<h2 id="lazy-declaration">Lazy declaration</h2></div>
+<p>Actually, our first "Daily Routine" example can be made more interesting.
+You can find the <strong><a href="examples/#daily-routine">example</a></strong> it the Examples section.</p>
+<hr />
+<h2 id="lazy-declarations">Lazy declarations</h2>
+<p>There are little information usually available at the time of class declaration. So
+one time you probably will need lazy declarations. With <code>declared</code> you can do that,
+providing a function that returns a mark or just a value, and decorating in with <code>@declare()</code>:</p>
+<pre><code>class Greeting(Mark):
+    collect_into = '_greetings'
+
+    def __repr__(self):
+        return self.text
+
+class Greetings(Declared):
+
+    def __init__(self, name):
+        self.name = name
+
+    @declare()
+    def in_english(owner):
+        return Greeting(text='Hello, %s' % owner.name)
+</code></pre>
+<p>If <code>DeclaredMeta</code> finds at least one mark declared in such way, it will not process marks. Instead
+it will add <code>.process_declared()</code> method to the owner class. Marks can be as lazy as you want: you will
+call <code>.process_declared()</code> yourself:</p>
+<pre><code>&gt;&gt;&gt; greetings = Greetings('John')
+&gt;&gt;&gt; greetings._greetings
+AttributeError: 'Greetings' object has no attribute '_greetings'
+&gt;&gt;&gt; greetings.process_declared()
+&gt;&gt;&gt; greetings._greetings
+OrderedDict([('in_english', Hello, John)])
+</code></pre>
+<p><code>.process_declared()</code> is a regular method, so if you want to call it from class, not instance, you would do</p>
+<pre><code class="python">Klass.process_declared(Klass)
+</code></pre>
+
+<p>You can specify the mark class with the first argument to <code>declared</code>, e. g. <code>@declare(Greeting)</code>. If that class defines a <code>.build()</code>
+method, the lazily returned value will be built with it. That could help solve the problem that we solved previously with
+setting <code>default_mark</code> attribute on the instance.</p>
+<p>Example:</p>
+<pre><code>class Greeting(Mark):
+    collect_into = '_greetings'
+
+    def build(mark, *args):
+        if isinstance(mark, str):
+            return Greeting(text=mark)
+        return mark
+
+class Greetings(Declared):
+
+    def __init__(self, name):
+        self.name = name
+
+    @declare(Greeting)
+    def in_english(self):
+        return 'Hello, %s' % self.name
+</code></pre>
+<p>Note that you don't need even to register <code>str</code> to be a subclass of Greeting.</p>
+<p>Another example for lazy mark you can find as a continuation of "Daily Routine" <strong><a href="examples/#lazy-declaration">example</a></strong>.</p></div>
             
         </div>
 
