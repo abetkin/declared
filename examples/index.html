@@ -167,7 +167,8 @@ class Time:
 1:29
 </code></pre>
 
-<p>Then we are going to define a class for the respective mark. We want it to understand strings as well:</p>
+<p>Then we are going to define a class for the respective mark. We want it to understand strings and <code>Time</code>
+instances as well:</p>
 <pre><code>from declared import SkipMark
 
 class time(Mark):
@@ -189,15 +190,15 @@ class time(Mark):
 time.register(str)
 time.register(Time)
 </code></pre>
-<p>And specify the default class for marks, so that it would know what to do with those strings:</p>
+<p>Then we will specify the default class for marks, so that it would know what to do with those strings:</p>
 <pre><code>class DailyRoutine(metaclass=DeclaredMeta):
     default_mark = time
 </code></pre>
 <p>Now we are done. We can write our daily routine classes and inherit it from <code>DailyRoutine</code>.</p>
 <hr />
 <h2 id="lazy-declaration">Lazy declaration</h2>
-<p>Let's try to write a daily routine with floating time of getting up. Here is what
-it will look like using lazy declarations:</p>
+<p>Let's try to write a daily routine with "floating" time of getting up. Here is how
+we can do it using lazy declarations:</p>
 <pre><code>from declared import Declared, declare
 
 class MyDailyRoutine(Declared):

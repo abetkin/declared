@@ -154,18 +154,18 @@ class DailyRoutine(metaclass=DeclaredMeta):
     breakfast = Time('9:00')
     lunch = Time('12:00')
 
-&gt;&gt;&gt; DailyRoutine._timepoins
+&gt;&gt;&gt; DailyRoutine._timepoints
 OrderedDict([('breakfast', time.struct_time(...)), ('lunch', time.struct_time(...))])
 </code></pre>
 <p>Not that produced <code>struct_time</code> instances are extra useful, but it demonstrates that a mark can provide a build method
-(by default <code>.build()</code> method returns the mark itself. The passed arguments to <code>.build()</code> are:</p>
+(by default <code>.build()</code> method returns the mark itself). The passed arguments to <code>.build()</code> are:</p>
 <ul>
 <li><code>marks</code>: A list of of all marks</li>
 <li><code>owner</code>: The marks owner (<code>DailyRoutine</code> in our example).
            If the lazy processing is used and <code>.process_declared()</code> was called from the instance,
-           then owner means that instance.</li>
+           then <code>owner</code> means that instance.</li>
 </ul>
-<p>By default marks are collected into the <code>_declared_marks</code> attribute, but <code>Time</code> class overrides it.
+<p>By default marks are collected into the <code>_declared_marks</code> attribute, but the <code>Time</code> class overrides it.
 If we had other marks present with a differing value of <code>collect_into</code>, than we would get more than one
 <code>OrderedDict</code>.</p>
 <p>Instead of using <code>DeclaredMeta</code>, you can inherit class from <code>Declared</code>, it means the same.</p>
@@ -188,11 +188,11 @@ class Serializer(metaclass=DeclaredMeta):
     default_mark = field
 </code></pre>
 <p>Notice the <code>default_mark</code> attribute that we had to set on the owner class.
-If we hadn't define it, <code>Field</code> instances would be processed as <code>Mark</code>'s not <code>field</code>,
+If we hadn't define it, <code>Field</code> instances would be processed as <code>Mark</code>, not <code>field</code>,
 and collected into <code>_declared_marks</code>.
-That's because though we have registered <code>Field</code> as a <code>field</code> subclass, we can't
+That's because though we have registered <code>Field</code> as a <code>field</code> subclass (with <code>abc</code>), we can't
 access <code>field</code>'s attributes from it.</p>
-<p>Now you won't be able to discriminate (by it's declaration-parsing capabilities)
+<p>Now you could not discriminate (by it's declaration-parsing capabilities)
 between our <code>Serializer</code> and the original one, from the <code>rest_framework</code>).</p>
 <pre><code>class Person(Serializer):
     name = serializers.CharField()
@@ -238,9 +238,9 @@ OrderedDict([('in_english', Hello, John)])
 <pre><code class="python">Klass.process_declared(Klass)
 </code></pre>
 
-<p>You can specify the mark class with the first argument to the decorator: <code>@declare(Greeting)</code>. If that class defines a <code>.build()</code>
+<p>You can also specify the mark class with the first argument to the decorator: <code>@declare(Greeting)</code>. If that class defines a <code>.build()</code>
 method, then the lazily returned value will be built with it. That could help solve the problem that we solved previously with
-setting <code>default_mark</code> attribute on the instance.</p>
+setting the <code>default_mark</code> attribute on the instance.</p>
 <p>Example:</p>
 <pre><code>class Greeting(Mark):
     collect_into = '_greetings'
@@ -259,8 +259,9 @@ class Greetings(Declared):
     def in_english(self):
         return 'Hello, %s' % self.name
 </code></pre>
-<p>Note that you don't need even to register <code>str</code> to be a subclass of Greeting.</p>
-<p>Another example for lazy mark you can find as a continuation of "Daily Routine" <strong><a href="examples/#lazy-declaration">example</a></strong>.</p></div>
+<p>Note that you don't even need to register <code>str</code> to be a subclass of Greeting.</p>
+<hr />
+<p>Another <strong><a href="examples/#lazy-declaration">example</a></strong> for lazy declarations you can find in the Examples section as a continuation to "Daily Routine".</p></div>
             
         </div>
 
