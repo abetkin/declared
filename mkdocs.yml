@@ -1,0 +1,10 @@
+site_name: declared
+site_url: http://abetkin.github.io/declared/
+site_description: Class based declaration.
+site_dir: /home/vitalii/Documents/declared_site
+
+repo_url: https://github.com/abetkin/declared
+
+pages:
+- ['index.md', 'Home']
+
