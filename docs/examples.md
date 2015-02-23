@@ -4,103 +4,86 @@ The examples collection.
 
 ---
 
-## subTest
+## Daily Routine
 
-In the standard
-library there is nice `unittest` package. It used to have, however, two annoyingly missing features:
-running subtests and dropping into debugger on failures. Now there is only one since
-the first problem was successfully solved in 3.4 release.
+Let's make a more sophisticated class for daily routine. Here is what it will be able to do:
 
-Lets try to implement this "subtest" feature
-using `gcontext`. For those who haven't read that part of `unittest` documentation,
-this is what the original looks like:
+    class MyDailyRoutine(DailyRoutine):
+        breakfast = '9:00'
+        lunch = '12:00'
+        dinner = '-1:33'     # invalid data
 
-    class MyTest(unittest.TestCase):
-        def test(self):
-            with self.subTest('this will fail'):
-                self.assertTrue(False)
+    >>> MyDailyRoutine._timepoints
+    OrderedDict([('breakfast', 9:0), ('lunch', 12:0)])
 
-Here is the proposed solution. We want subtests to use the same test result their parent does so
-we push it into the context. Also we push `{'testcase': self}`: subtests should know
-their parents.
+Let's start with writing a custom class for a time interval (with a modulo of a day):
 
-    import gcontext as g
+    class ParseError(Exception):
+        pass
 
-    class TestCase(unittest.TestCase):
+    class Time:
 
-        def run(self, result):
-            with g.add_context({'result': result, 'testcase': self}):
-                return super().run(result)
+        def __init__(self, hour, min):
+            self.hour = hour
+            self.min = min
 
-Here is our subtest class:
+        @classmethod
+        def parse(cls, value):
+            try:
+                value = strptime(value, '%H:%M')
+            except ValueError:
+                raise ParseError(value)
+            return cls(value.tm_hour, value.tm_min)
 
-    class SubTest(unittest.TestCase):
+        def __repr__(self):
+            return '%s:%s' % (self.hour, self.min)
 
-        parent = g.ContextAttr('testcase')
+        def __add__(self, other):
+            if isinstance(other, str):
+                try:
+                    other = self.parse(other)
+                except ParseError:
+                    return NotImplemented
+            elif not isinstance(other, Time):
+                return NotImplemented
+            min = self.min + other.min
+            hour, min = min // 60, min % 60
+            hour = (self.hour + other.hour + hour) % 24
+            return self.__class__(hour, min)
+            
+As you understand, it can add time intervals:
 
-        def __init__(self, description):
-            super().__init__()
-            self._name = '%s [%s]' % (self.parent, description)
+```python
+>>> Time(1, 34) + '23:55'
+1:29
+```
 
-        def __str__(self):
-            return self._name
+Now we are going to define a class for time interval mark. We want it to understand strings as well:
 
-        def runTest(self):
-            extype, ex, tb = sys.exc_info()
-            if extype:
-                raise extype.with_traceback(ex, tb)
+    from declared import SkipMark
 
-It's `runTest` does almost nothing: the actual testing code will be run inside the `subTest`
-context manager. It just reraises the last exception that will now be caught by
-`TestCase.run`. Now namely the context manager:
+    class time(Mark):
 
+        collect_into = '_timepoints'
 
-    class subTest(ContextDecorator):
+        def __init__(self, value):
+            self.value = value
 
-        result = g.ContextAttr('result')
+        def build(mark, marks, owner):
+            if isinstance(mark, str):
+                try:
+                    return Time.parse(mark)
+                except ParseError:
+                    raise SkipMark
+            return Mark.parse(mark.value)
 
-        def __init__(self, description):
-            self._description = description
+    time.register(str)
 
-        def __enter__(self):
-            self._case = SubTest(self._description)
-            self._context_cm = g.add_context({'testcase': self._case})
-            self._context_cm.__enter__()
+And specify the default class for marks, so that it would know what to do with those strings:
 
-        def __exit__(self, *exc_info):
-            self._context_cm.__exit__(*exc_info)
-            self._case.run(self.result)
-            return True
+    class DailyRoutine(metaclass=DeclaredMeta):
+        default_mark = time
+        
+Now we are done. We can write our daily routine classes and inherit it from `DailyRoutine`.
 
-
-All subtests also push `{'testcase': self}` to make a hierarchy.
-
-Now, how this `subTest` is different from the original?                  
-First, our subtests are nested,
-while in the original version they are not (we benefit from this fact only in `__str__` function).
-Also, they are not required to be accessed
-from the testcase instance, which allows us to write things like
-
-    class TC(TestCase):
-
-        @subTest('a method')
-        def amethod(self):
-            self.assertTrue(False)
-
-        def test(self):
-            with subTest('hierarchy'):
-                with subTest('is honoured'):
-                    self.assertFalse(True)
-            afunction()
-            self.amethod()
-
-    def case():
-        return g.get_context()['testcase']
-
-    @subTest('a function')
-    def afunction():
-        case().assertEqual(1 + 1, 2)
-
-*Note:* This is just an example, it doesn't have any real advantages for writing unit tests.
-
----
+-----------------------

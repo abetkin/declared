@@ -7,4 +7,4 @@ repo_url: https://github.com/abetkin/declared
 
 pages:
 - ['index.md', 'Home']
-
+- ['examples.md', 'Examples']

@@ -15,7 +15,7 @@ That special attributes are recognized by being `Mark` instances and therefore w
 Supports **"lazy" processing** of the declared marks. To use it, you just declare at least one "lazy" mark
 and then call `.process_declared()` from the instance of your class or from the class itself.
 
-Is inspired by the declarations processing in the `django-rest-framework`.
+Inspired by the declarations processing in the `django-rest-framework`.
 
 ---------
 
@@ -28,7 +28,7 @@ Let's define a mark for time:
 
     class Time(Mark):
 
-        collect_into = '_time_marks'
+        collect_into = '_timepoints'
 
         def __init__(self, value):
             self.value = value
@@ -44,7 +44,7 @@ And then use it:
         breakfast = Time('9:00')
         lunch = Time('12:00')
     
-    >>> DailyRoutine._time_marks
+    >>> DailyRoutine._timepoins
     OrderedDict([('breakfast', time.struct_time(...)), ('lunch', time.struct_time(...))])
 
 Not that produced `struct_time` instances are extra useful, it just demonstrates that a mark can be built
@@ -98,8 +98,11 @@ between our `Serializer` and the original one, from the `rest_framework`).
     >>> Person._declared_fields
     OrderedDict([('name', CharField()), ('age', IntegerField())])
         
+---------
 
+Actually, our first "Daily Routine" example can be made more interesting. Don't
+forget to check it out in the **[Examples](examples.md#daily-routine)** section.
 
 ----------------
 
-## Lazy declaration
+## Lazy declarations
