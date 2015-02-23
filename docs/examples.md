@@ -57,7 +57,8 @@ As you understand, you can add time intervals:
 1:29
 ```
 
-Then we are going to define a class for the respective mark. We want it to understand strings as well:
+Then we are going to define a class for the respective mark. We want it to understand strings and `Time`
+instances as well:
 
     from declared import SkipMark
 
@@ -80,7 +81,7 @@ Then we are going to define a class for the respective mark. We want it to under
     time.register(str)
     time.register(Time)
 
-And specify the default class for marks, so that it would know what to do with those strings:
+Then we will specify the default class for marks, so that it would know what to do with those strings:
 
     class DailyRoutine(metaclass=DeclaredMeta):
         default_mark = time
@@ -91,8 +92,8 @@ Now we are done. We can write our daily routine classes and inherit it from `Dai
 
 ## Lazy declaration
 
-Let's try to write a daily routine with floating time of getting up. Here is what
-it will look like using lazy declarations:
+Let's try to write a daily routine with "floating" time of getting up. Here is how
+we can do it using lazy declarations:
 
     from declared import Declared, declare
 

@@ -52,14 +52,14 @@ And then use it:
     OrderedDict([('breakfast', time.struct_time(...)), ('lunch', time.struct_time(...))])
 
 Not that produced `struct_time` instances are extra useful, but it demonstrates that a mark can provide a build method
-(by default `.build()` method returns the mark itself. The passed arguments to `.build()` are:
+(by default `.build()` method returns the mark itself). The passed arguments to `.build()` are:
 
 * `marks`: A list of of all marks
 * `owner`: The marks owner (`DailyRoutine` in our example).
            If the lazy processing is used and `.process_declared()` was called from the instance,
-           then owner means that instance.
+           then `owner` means that instance.
 
-By default marks are collected into the `_declared_marks` attribute, but `Time` class overrides it.
+By default marks are collected into the `_declared_marks` attribute, but the `Time` class overrides it.
 If we had other marks present with a differing value of `collect_into`, than we would get more than one
 `OrderedDict`.
            
@@ -87,12 +87,12 @@ Let's imagine that serializers used `DeclaredMeta` instead:
         default_mark = field
 
 Notice the `default_mark` attribute that we had to set on the owner class.
-If we hadn't define it, `Field` instances would be processed as `Mark`'s not `field`,
+If we hadn't define it, `Field` instances would be processed as `Mark`, not `field`,
 and collected into `_declared_marks`.
-That's because though we have registered `Field` as a `field` subclass, we can't
+That's because though we have registered `Field` as a `field` subclass (with `abc`), we can't
 access `field`'s attributes from it.
         
-Now you won't be able to discriminate (by it's declaration-parsing capabilities)
+Now you could not discriminate (by it's declaration-parsing capabilities)
 between our `Serializer` and the original one, from the `rest_framework`).
 
     class Person(Serializer):
@@ -147,9 +147,9 @@ call `.process_declared()` yourself:
 Klass.process_declared(Klass)
 ```
 
-You can specify the mark class with the first argument to the decorator: `@declare(Greeting)`. If that class defines a `.build()`
+You can also specify the mark class with the first argument to the decorator: `@declare(Greeting)`. If that class defines a `.build()`
 method, then the lazily returned value will be built with it. That could help solve the problem that we solved previously with
-setting `default_mark` attribute on the instance.
+setting the `default_mark` attribute on the instance.
 
 Example:
 
@@ -170,6 +170,8 @@ Example:
         def in_english(self):
             return 'Hello, %s' % self.name
 
-Note that you don't need even to register `str` to be a subclass of Greeting.
+Note that you don't even need to register `str` to be a subclass of Greeting.
 
-Another example for lazy mark you can find as a continuation of "Daily Routine" **[example](examples.md#lazy-declaration)**.
+-------
+
+Another **[example](examples.md#lazy-declaration)** for lazy declarations you can find in the Examples section as a continuation to "Daily Routine".
