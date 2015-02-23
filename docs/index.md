@@ -19,13 +19,13 @@ Inspired by the declarations processing in the `django-rest-framework`.
 
 ---------
 
-_Warning:_ Only **Python 3** is supported yet.
+Warning: Only **Python 3** is supported yet.
 
 ----------
 
 ## Examples
 
-Let's define a mark for time:
+Let's define a mark for a time point:
 
     from time import strptime
     from declared import Mark
@@ -51,7 +51,7 @@ And then use it:
     >>> DailyRoutine._timepoins
     OrderedDict([('breakfast', time.struct_time(...)), ('lunch', time.struct_time(...))])
 
-Not that produced `struct_time` instances are extra useful, it just demonstrates that a mark can be built
+Not that produced `struct_time` instances are extra useful, but it demonstrates that a mark can provide a build method
 (by default `.build()` method returns the mark itself. The passed arguments to `.build()` are:
 
 * `marks`: A list of of all marks
@@ -130,7 +130,7 @@ providing a function that returns a mark or just a value, and decorating in with
         def in_english(owner):
             return Greeting(text='Hello, %s' % owner.name)
         
-If `DeclaredMeta` finds at least one mark declared in such way, it will not process marks. Instead
+If `DeclaredMeta` finds at least one mark declared in such way, it will not process marks. Instead,
 it will add `.process_declared()` method to the owner class. Marks can be as lazy as you want: you will
 call `.process_declared()` yourself:
 
@@ -147,8 +147,8 @@ call `.process_declared()` yourself:
 Klass.process_declared(Klass)
 ```
 
-You can specify the mark class with the first argument to `declared`, e. g. `@declare(Greeting)`. If that class defines a `.build()`
-method, the lazily returned value will be built with it. That could help solve the problem that we solved previously with
+You can specify the mark class with the first argument to the decorator: `@declare(Greeting)`. If that class defines a `.build()`
+method, then the lazily returned value will be built with it. That could help solve the problem that we solved previously with
 setting `default_mark` attribute on the instance.
 
 Example:

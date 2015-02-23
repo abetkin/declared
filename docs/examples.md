@@ -50,14 +50,14 @@ Let's start with writing a custom class for a time interval (with a modulo of a 
             hour = (self.hour + other.hour + hour) % 24
             return self.__class__(hour, min)
             
-As you understand, it can add time intervals:
+As you understand, you can add time intervals:
 
 ```python
 >>> Time(1, 34) + '23:55'
 1:29
 ```
 
-Now we are going to define a class for time interval mark. We want it to understand strings as well:
+Then we are going to define a class for the respective mark. We want it to understand strings as well:
 
     from declared import SkipMark
 
@@ -68,13 +68,13 @@ Now we are going to define a class for time interval mark. We want it to underst
             self.value = value
 
         def build(mark, marks, owner):
+            if isinstance(mark, Time):
+                return mark
             if isinstance(mark, str):
                 try:
                     return Time.parse(mark)
                 except ParseError:
                     raise SkipMark
-            if isinstance(mark, Time):
-                return mark
             return Time.parse(mark.value)
 
     time.register(str)
@@ -93,6 +93,8 @@ Now we are done. We can write our daily routine classes and inherit it from `Dai
 
 Let's try to write a daily routine with floating time of getting up. Here is what
 it will look like using lazy declarations:
+
+    from declared import Declared, declare
 
     class MyDailyRoutine(Declared):
         
