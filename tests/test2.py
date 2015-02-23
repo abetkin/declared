@@ -43,13 +43,13 @@ class time(Mark):
         self.value = value
 
     def build(mark, marks, owner):
+        if isinstance(mark, Time):
+            return mark
         if isinstance(mark, str):
             try:
                 return Time.parse(mark)
             except ParseError:
                 raise SkipMark
-        if isinstance(mark, Time):
-            return mark
         return Time.parse(mark.value)
 
 time.register(str)
