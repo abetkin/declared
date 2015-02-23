@@ -19,6 +19,10 @@ Inspired by the declarations processing in the `django-rest-framework`.
 
 ---------
 
+_Warning:_ Only **Python 3** is supported yet.
+
+----------
+
 ## Examples
 
 Let's define a mark for time:
@@ -100,9 +104,72 @@ between our `Serializer` and the original one, from the `rest_framework`).
         
 ---------
 
-Actually, our first "Daily Routine" example can be made more interesting. Don't
-forget to check it out in the **[Examples](examples.md#daily-routine)** section.
+Actually, our first "Daily Routine" example can be made more interesting.
+You can find the **[example](examples.md#daily-routine)** it the Examples section.
 
 ----------------
 
 ## Lazy declarations
+
+There are little information usually available at the time of class declaration. So
+one time you probably will need lazy declarations. With `declared` you can do that,
+providing a function that returns a mark or just a value, and decorating in with `@declare()`:
+
+    class Greeting(Mark):
+        collect_into = '_greetings'
+        
+        def __repr__(self):
+            return self.text
+    
+    class Greetings(Declared):
+        
+        def __init__(self, name):
+            self.name = name
+        
+        @declare()
+        def in_english(owner):
+            return Greeting(text='Hello, %s' % owner.name)
+        
+If `DeclaredMeta` finds at least one mark declared in such way, it will not process marks. Instead
+it will add `.process_declared()` method to the owner class. Marks can be as lazy as you want: you will
+call `.process_declared()` yourself:
+
+    >>> greetings = Greetings('John')
+    >>> greetings._greetings
+    AttributeError: 'Greetings' object has no attribute '_greetings'
+    >>> greetings.process_declared()
+    >>> greetings._greetings
+    OrderedDict([('in_english', Hello, John)])
+
+`.process_declared()` is a regular method, so if you want to call it from class, not instance, you would do
+
+```python
+Klass.process_declared(Klass)
+```
+
+You can specify the mark class with the first argument to `declared`, e. g. `@declare(Greeting)`. If that class defines a `.build()`
+method, the lazily returned value will be built with it. That could help solve the problem that we solved previously with
+setting `default_mark` attribute on the instance.
+
+Example:
+
+    class Greeting(Mark):
+        collect_into = '_greetings'
+
+        def build(mark, *args):
+            if isinstance(mark, str):
+                return Greeting(text=mark)
+            return mark
+
+    class Greetings(Declared):
+
+        def __init__(self, name):
+            self.name = name
+
+        @declare(Greeting)
+        def in_english(self):
+            return 'Hello, %s' % self.name
+
+Note that you don't need even to register `str` to be a subclass of Greeting.
+
+Another example for lazy mark you can find as a continuation of "Daily Routine" **[example](examples.md#lazy-declaration)**.

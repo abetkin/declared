@@ -6,7 +6,7 @@ The examples collection.
 
 ## Daily Routine
 
-Let's make a more sophisticated class for daily routine. Here is what it will be able to do:
+Let's make a more sophisticated class for daily routine. Here is what it finally will be able to do:
 
     class MyDailyRoutine(DailyRoutine):
         breakfast = '9:00'
@@ -22,7 +22,6 @@ Let's start with writing a custom class for a time interval (with a modulo of a 
         pass
 
     class Time:
-
         def __init__(self, hour, min):
             self.hour = hour
             self.min = min
@@ -63,7 +62,6 @@ Now we are going to define a class for time interval mark. We want it to underst
     from declared import SkipMark
 
     class time(Mark):
-
         collect_into = '_timepoints'
 
         def __init__(self, value):
@@ -75,9 +73,12 @@ Now we are going to define a class for time interval mark. We want it to underst
                     return Time.parse(mark)
                 except ParseError:
                     raise SkipMark
-            return Mark.parse(mark.value)
+            if isinstance(mark, Time):
+                return mark
+            return Time.parse(mark.value)
 
     time.register(str)
+    time.register(Time)
 
 And specify the default class for marks, so that it would know what to do with those strings:
 
@@ -87,3 +88,28 @@ And specify the default class for marks, so that it would know what to do with t
 Now we are done. We can write our daily routine classes and inherit it from `DailyRoutine`.
 
 -----------------------
+
+## Lazy declaration
+
+Let's try to write a daily routine with floating time of getting up. Here is what
+it will look like using lazy declarations:
+
+    class MyDailyRoutine(Declared):
+        
+        def __init__(self, get_up):
+            if isinstance(get_up, str):
+                get_up = Time.parse(get_up)
+            self.get_up = get_up
+        
+        @declare(time)
+        def breakfast(self):
+            return self.get_up + '0:30'
+        
+        @declare(time)
+        def lunch(self):
+            return self.get_up + '3:30'
+            
+    >>> routine = MyDailyRoutine('8:30')
+    >>> routine.process_declared()
+    >>> routine._timepoints
+    OrderedDict([('breakfast', 9:0), ('lunch', 12:0)])
