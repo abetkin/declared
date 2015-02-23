@@ -1,2 +1,3 @@
 # declared
-Metaclass for class-based declarations
+
+**[Documentation](http://abetkin.github.io/declared/)**
