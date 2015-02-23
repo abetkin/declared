@@ -48,7 +48,7 @@ And then use it:
         breakfast = Time('9:00')
         lunch = Time('12:00')
     
-    >>> DailyRoutine._timepoins
+    >>> DailyRoutine._timepoints
     OrderedDict([('breakfast', time.struct_time(...)), ('lunch', time.struct_time(...))])
 
 Not that produced `struct_time` instances are extra useful, but it demonstrates that a mark can provide a build method
