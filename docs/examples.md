@@ -125,9 +125,9 @@ In this example we will aggregate (declaratively) filters from
 [Q](https://docs.djangoproject.com/en/1.7/ref/models/queries/#django.db.models.Q) and
 [QuerySet](https://docs.djangoproject.com/en/1.7/ref/models/querysets/#django.db.models.query.QuerySet) objects.
 
-Let's aggree that an object can be considered a filter, if it defines a `filter` callable, that takes iterable as a parameter
+Let's aggree on what can be considered a filter. Let it be any object, that defines `filter` callable that takes iterable as a parameter
 (usually, a queryset)
-and returns iterable. The `Q` objects doesn't define such an interface, also, we probably would want to change it's `repr()`
+and returns iterable. The `Q` objects don't define such interface, also, we probably would want to change it's `repr()`
 behavior. Let's write a wrapper:
 
     class qobj:
@@ -150,9 +150,9 @@ It's string representation got better:
     >>> qobj(Q(key='value'))
     Q: key=value
 
-Then we define the filter mark class:
+Then we define the class for filter mark:
 
-    from declared import Mark, Declared
+    from declared import Mark
 
     class qsfilter(Mark):
         collect_into = '_declared_filters'
@@ -180,7 +180,7 @@ Then we define the filter mark class:
 
     qsfilter.register(Q)
 
-Here is how we can declare a container with filters with it:
+Here is how we can declare a container with filters in it:
 
     from declare import Declared
 
@@ -202,7 +202,7 @@ Here is how we can declare a container with filters with it:
 `Question` is a django model taken from the official [tutorial](https://docs.djangoproject.com/en/1.7/intro/tutorial01/#creating-models).
 
 That was similar to what we've done before and not very interesting. Now let's try to aggregate filters.
-For example, here is what can be done for combination with OR & AND operations:
+For example, here is what can be done for combining with OR & AND operations:
 
     class Filter(qor):
     
@@ -211,12 +211,12 @@ For example, here is what can be done for combination with OR & AND operations:
         q1 = Q(..)
     
         class Nested(qand):
-            filter1 = Q(..)
+            filter3 = Q(..)
             filter4 = qsfilter(..)
             # ...
 
 `Nested` will combine `filter3` and `filter4` with AND operation. `Filter` will combine `filter1`, `filter2`, `q1` and `Nested` with OR.
-The nesting depth isn't limited. Looks pretty nice, doesn't it?
+The nesting depth won't be limited. Looks pretty nice, doesn't it?
 
 Also I think we will need a cascading filter: the one that will just apply filters to queryset one after another.
 
@@ -228,7 +228,7 @@ Also I think we will need a cascading filter: the one that will just apply filte
 For the filter nesting to work we need `qor`, `qand` and `CascadeFilter` to be filters themselves.
 But they are classes...
 
-Don't worry, we have metaclasses at our service:
+Don't worry, we have metaclasses for the resque:
 
     from declared import DeclaredMeta
 
@@ -249,6 +249,9 @@ As you can see, `DeclaredFilters` defines `.filter()` callable.
 
 Let's write the implementations:
 
+    from functools import reduce
+    import operator
+
     class ReducedFilters(DeclaredFilters):
         @classmethod
         def filter(cls, queryset):
@@ -257,8 +260,6 @@ Let's write the implementations:
             if filters:
                 return reduce(cls.operation, filters)
             return queryset
-
-    import operator
 
     class qand(ReducedFilters):
         operation = operator.and_
