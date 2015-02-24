@@ -111,6 +111,8 @@
         
             <li><a href="#lazy-declaration">Lazy declaration</a></li>
         
+            <li><a href="#django-filters">Django filters</a></li>
+        
     
     </ul>
 </div></div>
@@ -220,7 +222,151 @@ class MyDailyRoutine(Declared):
 &gt;&gt;&gt; routine.process_declared()
 &gt;&gt;&gt; routine._timepoints
 OrderedDict([('breakfast', 9:0), ('lunch', 12:0)])
-</code></pre></div>
+</code></pre>
+<hr />
+<h2 id="django-filters">Django filters</h2>
+<p>In this example we will aggregate (declaratively) filters from
+<a href="https://docs.djangoproject.com/en/1.7/ref/models/queries/#django.db.models.Q">Q</a> and
+<a href="https://docs.djangoproject.com/en/1.7/ref/models/querysets/#django.db.models.query.QuerySet">QuerySet</a> objects.</p>
+<p>Let's aggree that an object can be considered a filter, if it defines a <code>filter</code> callable, that takes iterable as a parameter
+(usually, a queryset)
+and returns iterable. The <code>Q</code> objects doesn't define such an interface, also, we probably would want to change it's <code>repr()</code>
+behavior. Let's write a wrapper:</p>
+<pre><code>class qobj:
+    def __init__(self, qobj):
+        self.qobj = qobj
+
+    def filter(self, queryset):
+        return queryset.filter(self.qobj)
+
+    def __repr__(self):
+        pairs = ['%s=%s' % item for item in self.qobj.children]
+        return 'Q: %s' % ', '.join(pairs)
+</code></pre>
+<p>It's string representation got better:</p>
+<pre><code>from django.db.models.query import Q, QuerySet
+
+&gt;&gt;&gt; Q(key='value')
+&lt;django.db.models.query_utils.Q at 0x7f5771937400&gt;
+&gt;&gt;&gt; qobj(Q(key='value'))
+Q: key=value
+</code></pre>
+<p>Then we define the filter mark class:</p>
+<pre><code>from declared import Mark, Declared
+
+class qsfilter(Mark):
+    collect_into = '_declared_filters'
+
+    func = None
+
+    def __init__(self, description, func=None):
+        self._description = description
+        self.func = func
+
+    def __repr__(self):
+        return self._description
+
+    def __call__(self, func):
+        self.func = func
+        return self
+
+    def filter(self, queryset):
+        return self.func(queryset)
+
+    def build(mark, *args):
+        if isinstance(mark, Q):
+            return qobj(mark)
+        return mark
+
+qsfilter.register(Q)
+</code></pre>
+<p>Here is how we can declare a container with filters with it:</p>
+<pre><code>from declare import Declared
+
+class Filter(Declared):
+    default_mark = qsfilter
+
+    @qsfilter('take the first element')
+    def take_first(queryset):
+        return queryset[0]
+
+    text = Q(question_text__icontains='some_text')
+
+&gt;&gt;&gt; filters = Filters._declared_filters
+&gt;&gt;&gt; filters
+OrderedDict([('take_first', take the first element), ('text', Q: question_text__icontains=some_text)])
+&gt;&gt;&gt; filters['take_first'].filter(Question.objects.all())
+&lt;Question: Question object&gt;
+</code></pre>
+<p><code>Question</code> is a django model taken from the official <a href="https://docs.djangoproject.com/en/1.7/intro/tutorial01/#creating-models">tutorial</a>.</p>
+<p>That was similar to what we've done before and not very interesting. Now let's try to aggregate filters.
+For example, here is what can be done for combination with OR &amp; AND operations:</p>
+<pre><code>class Filter(qor):
+
+    filter1 = qsfilter(..)
+    filter2 = qsfilter(..)
+    q1 = Q(..)
+
+    class Nested(qand):
+        filter1 = Q(..)
+        filter4 = qsfilter(..)
+        # ...
+</code></pre>
+<p><code>Nested</code> will combine <code>filter3</code> and <code>filter4</code> with AND operation. <code>Filter</code> will combine <code>filter1</code>, <code>filter2</code>, <code>q1</code> and <code>Nested</code> with OR.
+The nesting depth isn't limited. Looks pretty nice, doesn't it?</p>
+<p>Also I think we will need a cascading filter: the one that will just apply filters to queryset one after another.</p>
+<pre><code>class filters_sequence(CascadeFilter):
+    filter1 = qsfilter(..)
+    filter2 = Q(..)
+    # ...
+</code></pre>
+<p>For the filter nesting to work we need <code>qor</code>, <code>qand</code> and <code>CascadeFilter</code> to be filters themselves.
+But they are classes...</p>
+<p>Don't worry, we have metaclasses at our service:</p>
+<pre><code>from declared import DeclaredMeta
+
+@qsfilter.register
+class FiltersDeclaredMeta(DeclaredMeta, abc.ABCMeta):
+    def __repr__(cls):
+        return ', '.join(cls._declared_filters.keys())
+
+class DeclaredFilters(metaclass=FiltersDeclaredMeta):
+    default_mark = qsfilter
+
+    @classmethod
+    def filter(cls):
+        raise NotImplementedError()
+</code></pre>
+<p>Now, since <code>FiltersDeclaredMeta</code> is registered as <code>qsfilter</code>, <code>DeclaredFilters</code> will be considered an instance of <code>qsfilter</code>.
+As you can see, <code>DeclaredFilters</code> defines <code>.filter()</code> callable.</p>
+<p>Let's write the implementations:</p>
+<pre><code>class ReducedFilters(DeclaredFilters):
+    @classmethod
+    def filter(cls, queryset):
+        filters = [f.filter(queryset)
+                   for f in cls._declared_filters.values()]
+        if filters:
+            return reduce(cls.operation, filters)
+        return queryset
+
+import operator
+
+class qand(ReducedFilters):
+    operation = operator.and_
+
+class qor(ReducedFilters):
+    operation = operator.or_
+
+class CascadeFilter(DeclaredFilters):
+    @classmethod
+    def filter(cls, objects=None):
+        if objects is None:
+            objects = cls.objects
+        for f in cls._declared_filters.values():
+            objects = f.filter(objects)
+        return objects
+</code></pre>
+<p>That's all. Try it yourself.</p></div>
             
         </div>
 
