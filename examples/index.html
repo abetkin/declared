@@ -228,9 +228,9 @@ OrderedDict([('breakfast', 9:0), ('lunch', 12:0)])
 <p>In this example we will aggregate (declaratively) filters from
 <a href="https://docs.djangoproject.com/en/1.7/ref/models/queries/#django.db.models.Q">Q</a> and
 <a href="https://docs.djangoproject.com/en/1.7/ref/models/querysets/#django.db.models.query.QuerySet">QuerySet</a> objects.</p>
-<p>Let's aggree that an object can be considered a filter, if it defines a <code>filter</code> callable, that takes iterable as a parameter
+<p>Let's aggree on what can be considered a filter. Let it be any object, that defines <code>filter</code> callable that takes iterable as a parameter
 (usually, a queryset)
-and returns iterable. The <code>Q</code> objects doesn't define such an interface, also, we probably would want to change it's <code>repr()</code>
+and returns iterable. The <code>Q</code> objects don't define such interface, also, we probably would want to change it's <code>repr()</code>
 behavior. Let's write a wrapper:</p>
 <pre><code>class qobj:
     def __init__(self, qobj):
@@ -251,8 +251,8 @@ behavior. Let's write a wrapper:</p>
 &gt;&gt;&gt; qobj(Q(key='value'))
 Q: key=value
 </code></pre>
-<p>Then we define the filter mark class:</p>
-<pre><code>from declared import Mark, Declared
+<p>Then we define the class for filter mark:</p>
+<pre><code>from declared import Mark
 
 class qsfilter(Mark):
     collect_into = '_declared_filters'
@@ -280,7 +280,7 @@ class qsfilter(Mark):
 
 qsfilter.register(Q)
 </code></pre>
-<p>Here is how we can declare a container with filters with it:</p>
+<p>Here is how we can declare a container with filters in it:</p>
 <pre><code>from declare import Declared
 
 class Filter(Declared):
@@ -300,7 +300,7 @@ OrderedDict([('take_first', take the first element), ('text', Q: question_text__
 </code></pre>
 <p><code>Question</code> is a django model taken from the official <a href="https://docs.djangoproject.com/en/1.7/intro/tutorial01/#creating-models">tutorial</a>.</p>
 <p>That was similar to what we've done before and not very interesting. Now let's try to aggregate filters.
-For example, here is what can be done for combination with OR &amp; AND operations:</p>
+For example, here is what can be done for combining with OR &amp; AND operations:</p>
 <pre><code>class Filter(qor):
 
     filter1 = qsfilter(..)
@@ -308,12 +308,12 @@ For example, here is what can be done for combination with OR &amp; AND operatio
     q1 = Q(..)
 
     class Nested(qand):
-        filter1 = Q(..)
+        filter3 = Q(..)
         filter4 = qsfilter(..)
         # ...
 </code></pre>
 <p><code>Nested</code> will combine <code>filter3</code> and <code>filter4</code> with AND operation. <code>Filter</code> will combine <code>filter1</code>, <code>filter2</code>, <code>q1</code> and <code>Nested</code> with OR.
-The nesting depth isn't limited. Looks pretty nice, doesn't it?</p>
+The nesting depth won't be limited. Looks pretty nice, doesn't it?</p>
 <p>Also I think we will need a cascading filter: the one that will just apply filters to queryset one after another.</p>
 <pre><code>class filters_sequence(CascadeFilter):
     filter1 = qsfilter(..)
@@ -322,7 +322,7 @@ The nesting depth isn't limited. Looks pretty nice, doesn't it?</p>
 </code></pre>
 <p>For the filter nesting to work we need <code>qor</code>, <code>qand</code> and <code>CascadeFilter</code> to be filters themselves.
 But they are classes...</p>
-<p>Don't worry, we have metaclasses at our service:</p>
+<p>Don't worry, we have metaclasses for the resque:</p>
 <pre><code>from declared import DeclaredMeta
 
 @qsfilter.register
@@ -340,7 +340,10 @@ class DeclaredFilters(metaclass=FiltersDeclaredMeta):
 <p>Now, since <code>FiltersDeclaredMeta</code> is registered as <code>qsfilter</code>, <code>DeclaredFilters</code> will be considered an instance of <code>qsfilter</code>.
 As you can see, <code>DeclaredFilters</code> defines <code>.filter()</code> callable.</p>
 <p>Let's write the implementations:</p>
-<pre><code>class ReducedFilters(DeclaredFilters):
+<pre><code>from functools import reduce
+import operator
+
+class ReducedFilters(DeclaredFilters):
     @classmethod
     def filter(cls, queryset):
         filters = [f.filter(queryset)
@@ -348,8 +351,6 @@ As you can see, <code>DeclaredFilters</code> defines <code>.filter()</code> call
         if filters:
             return reduce(cls.operation, filters)
         return queryset
-
-import operator
 
 class qand(ReducedFilters):
     operation = operator.and_
