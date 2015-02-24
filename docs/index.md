@@ -1,6 +1,6 @@
 # declared
 
-Class based declaration.
+Class based declarations.
 
 ----------
 
@@ -101,11 +101,17 @@ between our `Serializer` and the original one, from the `rest_framework`).
 
     >>> Person._declared_fields
     OrderedDict([('name', CharField()), ('age', IntegerField())])
-        
+
 ---------
 
-Actually, our first "Daily Routine" example can be made more interesting.
-You can find the **[example](examples.md#daily-routine)** it the Examples section.
+In the Examples section you [will find](examples.md#django-filters) similar approach used to declare `django` filters.
+The role of fields there take [Q](https://docs.djangoproject.com/en/1.7/ref/models/queries/#django.db.models.Q) and
+[QuerySet](https://docs.djangoproject.com/en/1.7/ref/models/querysets/#django.db.models.query.QuerySet) objects.
+    
+---------
+
+Actually, our first "Daily Routine" example can be made [more interesting](examples.md#daily-routine).
+Check out the Examples section.
 
 ----------------
 
