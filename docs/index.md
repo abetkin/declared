@@ -6,18 +6,24 @@ Class based declarations.
 
 ## Overview
 
-This is a **small** (< 100 SLOC) python module aiming to solve one simple problem:
-taking the "special" attributes from the class declaration and forming an `OrderedDict`
+**declared** a small (< 100 SLOC) python module aiming to solve one simple problem:
+extracting from the class declaration specially "marked" attributes and forming an `OrderedDict`
 out of them (or a couple of `OrderedDict`'s).
 
-That special attributes are recognized by being `Mark` instances and therefore will be called marks.
+In `declared` "marked" is considered an attribute that is a
+`Mark` instance. So if you want an attribute to be "collected" from a class you need the type of the former be a `Mark`
+subclass or registered as such with `abc`.
+
+**Note:** For those who have used `django-rest-framework`: there you can define fields as attributes of `Serializer` class.
+This package may be regarded as the generalized version of that.
+
 
 Supports **"lazy" processing** of the declared marks. To use it, you just declare at least one "lazy" mark
 and then call `.process_declared()` from the instance of your class or from the class itself.
 
-Inspired by the declarations processing in the `django-rest-framework`.
+**Note:** `Mark` instances are not added to class namespace.
 
----------
+-------
 
 Warning: Only **Python 3** is supported yet.
 
@@ -25,7 +31,23 @@ Warning: Only **Python 3** is supported yet.
 
 ## Examples
 
-Let's define a mark for a time point:
+The simplest one: let's extract all numbers.
+
+    from declared import Mark, Declared
+
+    Mark.register(int)
+    
+    class MyAttrs(Declared):
+        a = 1
+        b = a + 1
+        c = 'not an int'
+    
+    >>> MyAttrs._declared_marks
+    OrderedDict([('a', 1), ('b', 2)])
+
+-------
+
+The second example deals with the declaration of the points of time:
 
     from time import strptime
     from declared import Mark
@@ -42,9 +64,7 @@ Let's define a mark for a time point:
 
 And then use it:
 
-    from declared import DeclaredMeta
-
-    class DailyRoutine(metaclass=DeclaredMeta):
+    class DailyRoutine(Declared):
         breakfast = Time('9:00')
         lunch = Time('12:00')
     
@@ -63,14 +83,14 @@ By default marks are collected into the `_declared_marks` attribute, but the `Ti
 If we had other marks present with a differing value of `collect_into`, than we would get more than one
 `OrderedDict`.
            
-Instead of using `DeclaredMeta`, you can inherit class from `Declared`, it means the same.
+Instead of inheriting from `Declared`, you can write `metaclass=DeclaredMeta`, it means the same.
 
 ---------
 
 In `django-rest-framework` there is `serializers.SerializerMetaclass` used for the same purposes as `DeclaredMeta`:
 it collects `serializers.Field` instances.
 
-Let's imagine that serializers used `DeclaredMeta` instead:
+Let's imagine that serializers used `declared` instead:
     
     from rest_framework import serializers
     
@@ -78,12 +98,12 @@ Let's imagine that serializers used `DeclaredMeta` instead:
         collect_into = '_declared_fields'
         
         @classmethod
-        def __subclasshook__(cls, C):            # yes, Mark inherits from ABC
+        def __subclasshook__(cls, C):
             if issubclass(C, serializers.Field):
                 return True
             return NotImplemented
     
-    class Serializer(metaclass=DeclaredMeta):
+    class Serializer(Declared):
         default_mark = field
 
 Notice the `default_mark` attribute that we had to set on the owner class.
