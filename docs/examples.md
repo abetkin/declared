@@ -141,7 +141,7 @@ behavior. Let's write a wrapper:
             pairs = ['%s=%s' % item for item in self.qobj.children]
             return 'Q: %s' % ', '.join(pairs)
 
-It's string representation got better:
+The string representation got better:
             
     from django.db.models.query import Q, QuerySet
 
@@ -152,23 +152,14 @@ It's string representation got better:
 
 Then we define the class for filter mark:
 
-    from declared import Mark
-
     class qsfilter(Mark):
         collect_into = '_declared_filters'
 
-        func = None
-        
-        def __init__(self, description, func=None):
-            self._description = description
+        def __init__(self, func):
             self.func = func
-        
+
         def __repr__(self):
-            return self._description
-        
-        def __call__(self, func):
-            self.func = func
-            return self
+            return self.func.__doc__ or self.func.__name__
 
         def filter(self, queryset):
             return self.func(queryset)
@@ -187,17 +178,17 @@ Here is how we can declare a container with filters in it:
     class Filter(Declared):
         default_mark = qsfilter
     
-        @qsfilter('take the first element')
-        def take_first(queryset):
-            return queryset[0]
+        @qsfilter
+        def take_one(queryset):
+            return queryset[:1]
         
-        text = Q(question_text__icontains='some_text')
+        text = Q(question_text__icontains='what')
     
     >>> filters = Filters._declared_filters
     >>> filters
     OrderedDict([('take_first', take the first element), ('text', Q: question_text__icontains=some_text)])
     >>> filters['take_first'].filter(Question.objects.all())
-    <Question: Question object>
+    [<Question: What's up>]
 
 `Question` is a django model taken from the official [tutorial](https://docs.djangoproject.com/en/1.7/intro/tutorial01/#creating-models).
 
@@ -269,11 +260,11 @@ Let's write the implementations:
         
     class CascadeFilter(DeclaredFilters):
         @classmethod
-        def filter(cls, objects=None):
-            if objects is None:
-                objects = cls.objects
+        def filter(cls, objects):
             for f in cls._declared_filters.values():
                 objects = f.filter(objects)
             return objects
 
-That's all. Try it yourself.
+That's all. You can try it yourself: here is the [repository](https://github.com/abetkin/djangotu/tree/declared)
+with some code from the django [official tutorial](https://docs.djangoproject.com/en/1.7/intro/tutorial01/).
+The branch `declared` contains this [example](https://github.com/abetkin/djangotu/blob/declared/polls/try_filters.py).

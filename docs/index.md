@@ -115,6 +115,11 @@ Check out the Examples section.
 
 ----------------
 
+**Note:** Probably, supporting custom attribute (specified with `collect_into`) to store the declared marks
+is an unneeded complication. It may be taken away in future.
+
+----------------
+
 ## Lazy declarations
 
 There are little information usually available at the time of class declaration. So
@@ -180,4 +185,4 @@ Note that you don't even need to register `str` to be a subclass of Greeting.
 
 -------
 
-Another **[example](examples.md#lazy-declaration)** for lazy declarations you can find in the Examples section as a continuation to "Daily Routine".
+Another [example](examples.md#lazy-declaration) for lazy declarations you can find in the Examples section as a continuation to "Daily Routine".
