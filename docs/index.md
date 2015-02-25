@@ -115,11 +115,6 @@ Check out the Examples section.
 
 ----------------
 
-**Note:** Probably, supporting a custom attribute (specified with `collect_into`) to store the declared marks
-is an unneeded complication. It may be taken away in future.
-
-----------------
-
 ## Lazy declarations
 
 There are little information usually available at the time of class declaration. So
