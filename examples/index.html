@@ -243,7 +243,7 @@ behavior. Let's write a wrapper:</p>
         pairs = ['%s=%s' % item for item in self.qobj.children]
         return 'Q: %s' % ', '.join(pairs)
 </code></pre>
-<p>It's string representation got better:</p>
+<p>The string representation got better:</p>
 <pre><code>from django.db.models.query import Q, QuerySet
 
 &gt;&gt;&gt; Q(key='value')
@@ -252,23 +252,14 @@ behavior. Let's write a wrapper:</p>
 Q: key=value
 </code></pre>
 <p>Then we define the class for filter mark:</p>
-<pre><code>from declared import Mark
-
-class qsfilter(Mark):
+<pre><code>class qsfilter(Mark):
     collect_into = '_declared_filters'
 
-    func = None
-
-    def __init__(self, description, func=None):
-        self._description = description
+    def __init__(self, func):
         self.func = func
 
     def __repr__(self):
-        return self._description
-
-    def __call__(self, func):
-        self.func = func
-        return self
+        return self.func.__doc__ or self.func.__name__
 
     def filter(self, queryset):
         return self.func(queryset)
@@ -286,17 +277,17 @@ qsfilter.register(Q)
 class Filter(Declared):
     default_mark = qsfilter
 
-    @qsfilter('take the first element')
-    def take_first(queryset):
-        return queryset[0]
+    @qsfilter
+    def take_one(queryset):
+        return queryset[:1]
 
-    text = Q(question_text__icontains='some_text')
+    text = Q(question_text__icontains='what')
 
 &gt;&gt;&gt; filters = Filters._declared_filters
 &gt;&gt;&gt; filters
 OrderedDict([('take_first', take the first element), ('text', Q: question_text__icontains=some_text)])
 &gt;&gt;&gt; filters['take_first'].filter(Question.objects.all())
-&lt;Question: Question object&gt;
+[&lt;Question: What's up&gt;]
 </code></pre>
 <p><code>Question</code> is a django model taken from the official <a href="https://docs.djangoproject.com/en/1.7/intro/tutorial01/#creating-models">tutorial</a>.</p>
 <p>That was similar to what we've done before and not very interesting. Now let's try to aggregate filters.
@@ -360,14 +351,14 @@ class qor(ReducedFilters):
 
 class CascadeFilter(DeclaredFilters):
     @classmethod
-    def filter(cls, objects=None):
-        if objects is None:
-            objects = cls.objects
+    def filter(cls, objects):
         for f in cls._declared_filters.values():
             objects = f.filter(objects)
         return objects
 </code></pre>
-<p>That's all. Try it yourself.</p></div>
+<p>That's all. You can try it yourself: here is the <a href="https://github.com/abetkin/djangotu/tree/declared">repository</a>
+with some code from the django <a href="https://docs.djangoproject.com/en/1.7/intro/tutorial01/">official tutorial</a>.
+The branch <code>declared</code> contains this <a href="https://github.com/abetkin/djangotu/blob/declared/polls/try_filters.py">example</a>.</p></div>
             
         </div>
 

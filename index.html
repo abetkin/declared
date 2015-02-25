@@ -209,6 +209,9 @@ The role of fields there take <a href="https://docs.djangoproject.com/en/1.7/ref
 <p>Actually, our first "Daily Routine" example can be made <a href="examples/#daily-routine">more interesting</a>.
 Check out the Examples section.</p>
 <hr />
+<p><strong>Note:</strong> Probably, supporting custom attribute (specified with <code>collect_into</code>) to store the declared marks
+is an unneeded complication. It may be taken away in future.</p>
+<hr />
 <h2 id="lazy-declarations">Lazy declarations</h2>
 <p>There are little information usually available at the time of class declaration. So
 one time you probably will need lazy declarations. With <code>declared</code> you can do that,
@@ -265,7 +268,7 @@ class Greetings(Declared):
 </code></pre>
 <p>Note that you don't even need to register <code>str</code> to be a subclass of Greeting.</p>
 <hr />
-<p>Another <strong><a href="examples/#lazy-declaration">example</a></strong> for lazy declarations you can find in the Examples section as a continuation to "Daily Routine".</p></div>
+<p>Another <a href="examples/#lazy-declaration">example</a> for lazy declarations you can find in the Examples section as a continuation to "Daily Routine".</p></div>
             
         </div>
 
