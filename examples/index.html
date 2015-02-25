@@ -285,8 +285,8 @@ class Filter(Declared):
 
 &gt;&gt;&gt; filters = Filters._declared_filters
 &gt;&gt;&gt; filters
-OrderedDict([('take_first', take the first element), ('text', Q: question_text__icontains=some_text)])
-&gt;&gt;&gt; filters['take_first'].filter(Question.objects.all())
+OrderedDict([('take_one', take the first element), ('text', Q: question_text__icontains=what)])
+&gt;&gt;&gt; filters['take_one'].filter(Question.objects.all())
 [&lt;Question: What's up&gt;]
 </code></pre>
 <p><code>Question</code> is a django model taken from the official <a href="https://docs.djangoproject.com/en/1.7/intro/tutorial01/#creating-models">tutorial</a>.</p>
@@ -313,7 +313,7 @@ The nesting depth won't be limited. Looks pretty nice, doesn't it?</p>
 </code></pre>
 <p>For the filter nesting to work we need <code>qor</code>, <code>qand</code> and <code>CascadeFilter</code> to be filters themselves.
 But they are classes...</p>
-<p>Don't worry, we have metaclasses for the resque:</p>
+<p>Don't worry, we have metaclasses to the rescue:</p>
 <pre><code>from declared import DeclaredMeta
 
 @qsfilter.register
