@@ -122,18 +122,36 @@
 <p>Class based declarations.</p>
 <hr />
 <h2 id="overview">Overview</h2>
-<p>This is a <strong>small</strong> (&lt; 100 SLOC) python module aiming to solve one simple problem:
-taking the "special" attributes from the class declaration and forming an <code>OrderedDict</code>
+<p><strong>declared</strong> a small (&lt; 100 SLOC) python module aiming to solve one simple problem:
+extracting from the class declaration specially "marked" attributes and forming an <code>OrderedDict</code>
 out of them (or a couple of <code>OrderedDict</code>'s).</p>
-<p>That special attributes are recognized by being <code>Mark</code> instances and therefore will be called marks.</p>
+<p>In <code>declared</code> "marked" is considered an attribute that is a
+<code>Mark</code> instance. So if you want an attribute to be "collected" from a class you need the type of the former be a <code>Mark</code>
+subclass or registered as such with <code>abc</code>.</p>
+<p><strong>Note:</strong> For those who have used <code>django-rest-framework</code>: there you can define fields as attributes of <code>Serializer</code> class.
+This package may be regarded as the generalized version of that.</p>
 <p>Supports <strong>"lazy" processing</strong> of the declared marks. To use it, you just declare at least one "lazy" mark
 and then call <code>.process_declared()</code> from the instance of your class or from the class itself.</p>
-<p>Inspired by the declarations processing in the <code>django-rest-framework</code>.</p>
+<p><strong>Note:</strong> <code>Mark</code> instances are not added to class namespace.</p>
 <hr />
 <p>Warning: Only <strong>Python 3</strong> is supported yet.</p>
 <hr />
 <h2 id="examples">Examples</h2>
-<p>Let's define a mark for a time point:</p>
+<p>The simplest one: let's extract all numbers.</p>
+<pre><code>from declared import Mark, Declared
+
+Mark.register(int)
+
+class MyAttrs(Declared):
+    a = 1
+    b = a + 1
+    c = 'not an int'
+
+&gt;&gt;&gt; MyAttrs._declared_marks
+OrderedDict([('a', 1), ('b', 2)])
+</code></pre>
+<hr />
+<p>The second example deals with the declaration of the points of time:</p>
 <pre><code>from time import strptime
 from declared import Mark
 
@@ -148,9 +166,7 @@ class Time(Mark):
         return strptime(self.value, '%H:%M')
 </code></pre>
 <p>And then use it:</p>
-<pre><code>from declared import DeclaredMeta
-
-class DailyRoutine(metaclass=DeclaredMeta):
+<pre><code>class DailyRoutine(Declared):
     breakfast = Time('9:00')
     lunch = Time('12:00')
 
@@ -168,23 +184,23 @@ OrderedDict([('breakfast', time.struct_time(...)), ('lunch', time.struct_time(..
 <p>By default marks are collected into the <code>_declared_marks</code> attribute, but the <code>Time</code> class overrides it.
 If we had other marks present with a differing value of <code>collect_into</code>, than we would get more than one
 <code>OrderedDict</code>.</p>
-<p>Instead of using <code>DeclaredMeta</code>, you can inherit class from <code>Declared</code>, it means the same.</p>
+<p>Instead of inheriting from <code>Declared</code>, you can write <code>metaclass=DeclaredMeta</code>, it means the same.</p>
 <hr />
 <p>In <code>django-rest-framework</code> there is <code>serializers.SerializerMetaclass</code> used for the same purposes as <code>DeclaredMeta</code>:
 it collects <code>serializers.Field</code> instances.</p>
-<p>Let's imagine that serializers used <code>DeclaredMeta</code> instead:</p>
+<p>Let's imagine that serializers used <code>declared</code> instead:</p>
 <pre><code>from rest_framework import serializers
 
 class field(Mark):
     collect_into = '_declared_fields'
 
     @classmethod
-    def __subclasshook__(cls, C):            # yes, Mark inherits from ABC
+    def __subclasshook__(cls, C):
         if issubclass(C, serializers.Field):
             return True
         return NotImplemented
 
-class Serializer(metaclass=DeclaredMeta):
+class Serializer(Declared):
     default_mark = field
 </code></pre>
 <p>Notice the <code>default_mark</code> attribute that we had to set on the owner class.
