@@ -132,7 +132,6 @@ subclass or registered as such with <code>abc</code>.</p>
 This package may be regarded as the generalized version of that.</p>
 <p>Supports <strong>"lazy" processing</strong> of the declared marks. To use it, you just declare at least one "lazy" mark
 and then call <code>.process_declared()</code> from the instance of your class or from the class itself.</p>
-<p><strong>Note:</strong> <code>Mark</code> instances are not added to class namespace.</p>
 <hr />
 <p>Warning: Only <strong>Python 3</strong> is supported yet.</p>
 <hr />
@@ -149,7 +148,11 @@ class MyAttrs(Declared):
 
 &gt;&gt;&gt; MyAttrs._declared_marks
 OrderedDict([('a', 1), ('b', 2)])
+
+&gt;&gt;&gt; MyAttrs.a
+AttributeError: type object 'MyAttrs' has no attribute 'a'
 </code></pre>
+<p>Yes, <code>Mark</code> instances are not added to class namespace.</p>
 <hr />
 <p>The second example deals with the declaration of the points of time:</p>
 <pre><code>from time import strptime
