@@ -186,8 +186,8 @@ Here is how we can declare a container with filters in it:
     
     >>> filters = Filters._declared_filters
     >>> filters
-    OrderedDict([('take_first', take the first element), ('text', Q: question_text__icontains=some_text)])
-    >>> filters['take_first'].filter(Question.objects.all())
+    OrderedDict([('take_one', take the first element), ('text', Q: question_text__icontains=what)])
+    >>> filters['take_one'].filter(Question.objects.all())
     [<Question: What's up>]
 
 `Question` is a django model taken from the official [tutorial](https://docs.djangoproject.com/en/1.7/intro/tutorial01/#creating-models).
@@ -219,7 +219,7 @@ Also I think we will need a cascading filter: the one that will just apply filte
 For the filter nesting to work we need `qor`, `qand` and `CascadeFilter` to be filters themselves.
 But they are classes...
 
-Don't worry, we have metaclasses for the resque:
+Don't worry, we have metaclasses to the rescue:
 
     from declared import DeclaredMeta
 

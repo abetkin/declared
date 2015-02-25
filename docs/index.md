@@ -115,7 +115,7 @@ Check out the Examples section.
 
 ----------------
 
-**Note:** Probably, supporting custom attribute (specified with `collect_into`) to store the declared marks
+**Note:** Probably, supporting a custom attribute (specified with `collect_into`) to store the declared marks
 is an unneeded complication. It may be taken away in future.
 
 ----------------
