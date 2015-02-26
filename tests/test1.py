@@ -1,7 +1,7 @@
 
 from collections import OrderedDict
 
-from declared import Mark as mark, DeclaredMeta
+from declared import Mark as mark, Declared
 
 class custom(mark):
 
@@ -15,7 +15,7 @@ class custom(mark):
         return int(self.value)
 
 
-class MarkedApp(metaclass=DeclaredMeta):
+class MarkedApp(Declared, extract=custom):
 
     mark1 = mark2 = custom(value=1)
 
