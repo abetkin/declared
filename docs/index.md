@@ -15,7 +15,7 @@ This package may be regarded as the generalized version of that.
 
 
 Supports **"lazy" processing** of the declared marks. To use it, you just declare at least one "lazy" mark
-and then call `.process_declared()` from the instance of your class or from the class itself.
+and then call `.process_declared()` from the instance or class.
 
 -------
 
