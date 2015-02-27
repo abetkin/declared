@@ -179,7 +179,8 @@ class time(Mark):
     def __init__(self, value):
         self.value = value
 
-    def build(mark, marks, owner):
+    @classmethod
+    def build(cls, mark, marks, owner):
         if isinstance(mark, Time):
             return mark
         if isinstance(mark, str):
@@ -192,29 +193,29 @@ class time(Mark):
 time.register(str)
 time.register(Time)
 </code></pre>
-<p>Then we will specify the default class for marks, so that it would know what to do with those strings:</p>
-<pre><code>class DailyRoutine(metaclass=DeclaredMeta):
-    default_mark = time
+<p>That's all, now we can declare daily routines:</p>
+<pre><code>class DailyRoutine(Declared, extract=time):
+    # here go the attributes
 </code></pre>
-<p>Now we are done. We can write our daily routine classes and inherit it from <code>DailyRoutine</code>.</p>
+<p>We can do that, or just leave this class empty and inherit it.</p>
 <hr />
 <h2 id="lazy-declaration">Lazy declaration</h2>
 <p>Let's try to write a daily routine with "floating" time of getting up. Here is how
 we can do it using lazy declarations:</p>
-<pre><code>from declared import Declared, declare
+<pre><code>from declared import Declared, lazy
 
-class MyDailyRoutine(Declared):
+class DailyRoutine(Declared, extract=time):
 
     def __init__(self, get_up):
         if isinstance(get_up, str):
             get_up = Time.parse(get_up)
         self.get_up = get_up
 
-    @declare(time)
+    @lazy
     def breakfast(self):
         return self.get_up + '0:30'
 
-    @declare(time)
+    @lazy
     def lunch(self):
         return self.get_up + '3:30'
 
@@ -264,7 +265,8 @@ Q: key=value
     def filter(self, queryset):
         return self.func(queryset)
 
-    def build(mark, *args):
+    @classmethod
+    def build(cls, mark, *args):
         if isinstance(mark, Q):
             return qobj(mark)
         return mark
@@ -274,8 +276,7 @@ qsfilter.register(Q)
 <p>Here is how we can declare a container with filters in it:</p>
 <pre><code>from declare import Declared
 
-class Filter(Declared):
-    default_mark = qsfilter
+class Filter(Declared, extract=qsfilter):
 
     @qsfilter
     def take_one(queryset):
@@ -285,7 +286,7 @@ class Filter(Declared):
 
 &gt;&gt;&gt; filters = Filters._declared_filters
 &gt;&gt;&gt; filters
-OrderedDict([('take_one', take the first element), ('text', Q: question_text__icontains=what)])
+OrderedDict([('take_one', take one), ('text', Q: question_text__icontains=what)])
 &gt;&gt;&gt; filters['take_one'].filter(Question.objects.all())
 [&lt;Question: What's up&gt;]
 </code></pre>
@@ -321,8 +322,7 @@ class FiltersDeclaredMeta(DeclaredMeta, abc.ABCMeta):
     def __repr__(cls):
         return ', '.join(cls._declared_filters.keys())
 
-class DeclaredFilters(metaclass=FiltersDeclaredMeta):
-    default_mark = qsfilter
+class DeclaredFilters(metaclass=FiltersDeclaredMeta, extract=qsfilter):
 
     @classmethod
     def filter(cls):
