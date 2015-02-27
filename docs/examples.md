@@ -68,7 +68,8 @@ instances as well:
         def __init__(self, value):
             self.value = value
 
-        def build(mark, marks, owner):
+        @classmethod
+        def build(cls, mark, marks, owner):
             if isinstance(mark, Time):
                 return mark
             if isinstance(mark, str):

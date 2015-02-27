@@ -7,12 +7,8 @@ Class based declarations.
 ## Overview
 
 **declared** a small (< 100 SLOC) python module aiming to solve one simple problem:
-extracting from the class declaration specially "marked" attributes and forming an `OrderedDict`
-out of them (or a couple of `OrderedDict`'s).
-
-In `declared` "marked" is considered an attribute that is a
-`Mark` instance. So if you want an attribute to be "collected" from a class you need the type of the former be a `Mark`
-subclass or registered as such with `abc`.
+extracting from the class declaration instances of the specified class and forming an `OrderedDict`
+out of them, not adding them to class namespace.
 
 **Note:** For those who have used `django-rest-framework`: there you can define fields as attributes of `Serializer` class.
 This package may be regarded as the generalized version of that.
@@ -33,20 +29,25 @@ The simplest one: let's extract all numbers.
 
     from declared import Mark, Declared
 
-    Mark.register(int)
+    class Int(Mark):
+        collect_into = '_ints'
+    Int.register(int)
     
-    class MyAttrs(Declared):
+    class MyAttrs(Declared, extract=Int):
         a = 1
         b = a + 1
         c = 'not an int'
     
-    >>> MyAttrs._declared_marks
+`extract` keyword says marks are `Int` instances (`Mark` is default).          
+`collect_into` specifies the attribute name we want to collect the marks into.
+    
+    >>> MyAttrs._ints
     OrderedDict([('a', 1), ('b', 2)])
     
     >>> MyAttrs.a
     AttributeError: type object 'MyAttrs' has no attribute 'a'
     
-Yes, `Mark` instances are not added to class namespace.
+As you see, `int` instances were not added to class namespace.
 
 -------
 
@@ -67,25 +68,22 @@ The second example deals with the declaration of the points of time:
 
 And then use it:
 
-    class DailyRoutine(Declared):
+    class DailyRoutine(Declared, extract=Time):
         breakfast = Time('9:00')
         lunch = Time('12:00')
     
     >>> DailyRoutine._timepoints
     OrderedDict([('breakfast', time.struct_time(...)), ('lunch', time.struct_time(...))])
 
-Not that produced `struct_time` instances are extra useful, but it demonstrates that a mark can provide a build method
+Not that produced `struct_time` instances are extra useful, but it demonstrates that a mark can provide a build classmethod
 (by default `.build()` method returns the mark itself). The passed arguments to `.build()` are:
 
-* `marks`: A list of of all marks
 * `owner`: The marks owner (`DailyRoutine` in our example).
            If the lazy processing is used and `.process_declared()` was called from the instance,
            then `owner` means that instance.
+* `marks_dict`: A dict of all marks
 
-By default marks are collected into the `_declared_marks` attribute, but the `Time` class overrides it.
-If we had other marks present with a differing value of `collect_into`, than we would get more than one
-`OrderedDict`.
-           
+
 Instead of inheriting from `Declared`, you can write `metaclass=DeclaredMeta`, it means the same.
 
 ---------
@@ -106,15 +104,9 @@ Let's imagine that serializers used `declared` instead:
                 return True
             return NotImplemented
     
-    class Serializer(Declared):
-        default_mark = field
+    class Serializer(Declared, extract=field):
+        pass
 
-Notice the `default_mark` attribute that we had to set on the owner class.
-If we hadn't define it, `Field` instances would be processed as `Mark`, not `field`,
-and collected into `_declared_marks`.
-That's because though we have registered `Field` as a `field` subclass (with `abc`), we can't
-access `field`'s attributes from it.
-        
 Now you could not discriminate (by it's declaration-parsing capabilities)
 between our `Serializer` and the original one, from the `rest_framework`).
 
@@ -142,7 +134,7 @@ Check out the Examples section.
 
 There are little information usually available at the time of class declaration. So
 one time you probably will need lazy declarations. With `declared` you can do that,
-providing a function that returns a mark or just a value, and decorating in with `@declare()`:
+providing a function that returns a mark or just a value, and decorating in with `@lazy`:
 
     class Greeting(Mark):
         collect_into = '_greetings'
@@ -150,18 +142,18 @@ providing a function that returns a mark or just a value, and decorating in with
         def __repr__(self):
             return self.text
     
-    class Greetings(Declared):
+    class Greetings(Declared, extract=Greeting):
         
         def __init__(self, name):
             self.name = name
         
-        @declare()
+        @lazy
         def in_english(owner):
             return Greeting(text='Hello, %s' % owner.name)
         
-If `DeclaredMeta` finds at least one mark declared in such way, it will not process marks. Instead,
-it will add `.process_declared()` method to the owner class. Marks can be as lazy as you want: you will
-call `.process_declared()` yourself:
+If `DeclaredMeta` finds at least one mark decorated with `@lazy`, it will not process marks. Instead,
+it will add `process_declared` callable to the owner class. You can call `.process_declared()` either from class
+or an instance - `owner` will be class or instance respectively.
 
     >>> greetings = Greetings('John')
     >>> greetings._greetings
@@ -169,37 +161,6 @@ call `.process_declared()` yourself:
     >>> greetings.process_declared()
     >>> greetings._greetings
     OrderedDict([('in_english', Hello, John)])
-
-`.process_declared()` is a regular method, so if you want to call it from class, not instance, you would do
-
-```python
-Klass.process_declared(Klass)
-```
-
-You can also specify the mark class with the first argument to the decorator: `@declare(Greeting)`. If that class defines a `.build()`
-method, then the lazily returned value will be built with it. That could help solve the problem that we solved previously with
-setting the `default_mark` attribute on the instance.
-
-Example:
-
-    class Greeting(Mark):
-        collect_into = '_greetings'
-
-        def build(mark, *args):
-            if isinstance(mark, str):
-                return Greeting(text=mark)
-            return mark
-
-    class Greetings(Declared):
-
-        def __init__(self, name):
-            self.name = name
-
-        @declare(Greeting)
-        def in_english(self):
-            return 'Hello, %s' % self.name
-
-Note that you don't even need to register `str` to be a subclass of Greeting.
 
 -------
 
