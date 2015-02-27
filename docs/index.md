@@ -8,7 +8,7 @@ Class based declarations.
 
 **declared** a small (< 100 SLOC) python module aiming to solve one simple problem:
 extracting from the class declaration instances of the specified class and forming an `OrderedDict`
-out of them, not adding them to class namespace.
+out of them.
 
 **Note:** For those who have used `django-rest-framework`: there you can define fields as attributes of `Serializer` class.
 This package may be regarded as the generalized version of that.
@@ -43,11 +43,6 @@ The simplest one: let's extract all numbers.
     
     >>> MyAttrs._ints
     OrderedDict([('a', 1), ('b', 2)])
-    
-    >>> MyAttrs.a
-    AttributeError: type object 'MyAttrs' has no attribute 'a'
-    
-As you see, `int` instances were not added to class namespace.
 
 -------
 
@@ -75,6 +70,9 @@ And then use it:
     >>> DailyRoutine._timepoints
     OrderedDict([('breakfast', time.struct_time(...)), ('lunch', time.struct_time(...))])
 
+    >>> DailyRoutine.lunch
+    time.struct_time(...)
+    
 Not that produced `struct_time` instances are extra useful, but it demonstrates that a mark can provide a build classmethod
 (by default `.build()` method returns the mark itself). The passed arguments to `.build()` are:
 

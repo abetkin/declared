@@ -49,6 +49,7 @@ Let's start with writing a custom class for a time interval (with a modulo of a 
             hour, min = min // 60, min % 60
             hour = (self.hour + other.hour + hour) % 24
             return self.__class__(hour, min)
+
             
 As you understand, you can add time intervals:
 
@@ -82,12 +83,12 @@ instances as well:
     time.register(str)
     time.register(Time)
 
-Then we will specify the default class for marks, so that it would know what to do with those strings:
+That's all, now we can declare daily routines:
 
-    class DailyRoutine(metaclass=DeclaredMeta):
-        default_mark = time
+    class DailyRoutine(Declared, extract=time):
+        # here go the attributes
         
-Now we are done. We can write our daily routine classes and inherit it from `DailyRoutine`.
+We can do that, or just leave this class empty and inherit it.
 
 -----------------------
 
@@ -96,20 +97,20 @@ Now we are done. We can write our daily routine classes and inherit it from `Dai
 Let's try to write a daily routine with "floating" time of getting up. Here is how
 we can do it using lazy declarations:
 
-    from declared import Declared, declare
+    from declared import Declared, lazy
 
-    class MyDailyRoutine(Declared):
+    class DailyRoutine(Declared, extract=time):
         
         def __init__(self, get_up):
             if isinstance(get_up, str):
                 get_up = Time.parse(get_up)
             self.get_up = get_up
         
-        @declare(time)
+        @lazy
         def breakfast(self):
             return self.get_up + '0:30'
         
-        @declare(time)
+        @lazy
         def lunch(self):
             return self.get_up + '3:30'
             
@@ -165,7 +166,8 @@ Then we define the class for filter mark:
         def filter(self, queryset):
             return self.func(queryset)
 
-        def build(mark, *args):
+        @classmethod
+        def build(cls, mark, *args):
             if isinstance(mark, Q):
                 return qobj(mark)
             return mark
@@ -176,8 +178,7 @@ Here is how we can declare a container with filters in it:
 
     from declare import Declared
 
-    class Filter(Declared):
-        default_mark = qsfilter
+    class Filter(Declared, extract=qsfilter):
     
         @qsfilter
         def take_one(queryset):
@@ -187,7 +188,7 @@ Here is how we can declare a container with filters in it:
     
     >>> filters = Filters._declared_filters
     >>> filters
-    OrderedDict([('take_one', take the first element), ('text', Q: question_text__icontains=what)])
+    OrderedDict([('take_one', take one), ('text', Q: question_text__icontains=what)])
     >>> filters['take_one'].filter(Question.objects.all())
     [<Question: What's up>]
 
@@ -229,8 +230,7 @@ Don't worry, we have metaclasses to the rescue:
         def __repr__(cls):
             return ', '.join(cls._declared_filters.keys())
 
-    class DeclaredFilters(metaclass=FiltersDeclaredMeta):
-        default_mark = qsfilter
+    class DeclaredFilters(metaclass=FiltersDeclaredMeta, extract=qsfilter):
         
         @classmethod
         def filter(cls):
