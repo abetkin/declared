@@ -12,9 +12,16 @@ class Mark(metaclass=ABCMeta):
     def __init__(self, **kwds):
         self.__dict__.update(kwds)
 
-    def build(self, marks, owner):
+    @classmethod
+    def build(cls, mark, owner, marks_dict):
         # can raise SkipMark
-        return self
+        return mark
+
+
+class lazy(Mark):
+
+    def __init__(self, func):
+        self.func = func
 
 
 class DeclaredMeta(type):
@@ -23,14 +30,26 @@ class DeclaredMeta(type):
     and then removes from the class namespace.
     '''
 
+    mark_type = Mark
+
     @classmethod
     def __prepare__(metacls, name, bases, **kwds):
         return OrderedDict()
 
-    def __new__(cls, name, bases, namespace):
+    @property
+    def mark_type(self):
+        return self.process_declared.mark_type
+
+    def __new__(cls, name, bases, namespace, extract=None):
+        for base in bases:
+            if extract:
+                break
+            extract = getattr(base, 'mark_type', None)
+        else:
+            extract = extract or Mark
         marks_dict = OrderedDict()
         for key, obj in namespace.items():
-            if not isinstance(obj, Mark):
+            if not isinstance(obj, (extract, lazy)):
                 continue
             # make clones if necessary so that all marks
             # were different objects
@@ -42,77 +61,43 @@ class DeclaredMeta(type):
         for _name in marks_dict:
             del namespace[_name]
 
-        is_lazy = any(isinstance(mark, declare) for mark in marks_dict.values())
+        namespace['process_declared'] = ProcessDeclared(marks_dict, extract)
 
-        if is_lazy:
-            def process_declared(self):
-                return cls.process_declared(self, marks_dict)
+        return super().__new__(cls, name, bases, namespace)
 
-            namespace['process_declared'] = process_declared
 
-        klass = type.__new__(cls, name, bases, namespace)
-        if not is_lazy:
-            cls.process_declared(klass, marks_dict)
+    def __init__(cls, *args, extract=None):
+        if not cls.process_declared.lazy:
+            cls.process_declared()
+        return super().__init__(*args)
 
-        return klass
 
-    @classmethod
-    def process_declared(cls, owner, marks_dict):
-        all_marks = list(marks_dict.values())
-        created_attrs = set() # TODO write comments
-        for key, mark in marks_dict.items():
-            # if not isinstance(owner, type):
-            if Mark in mark.__class__.__mro__:
-                mark_type = mark.__class__
-            else:
-                mark_type = getattr(owner, 'default_mark', Mark)
+class ProcessDeclared:
+
+    def __init__(self, marks_dict, mark_type,  owner=None):
+        self.marks_dict = marks_dict
+        self.mark_type = mark_type
+        self.owner = owner
+
+    def __get__(self, instance, klass):
+        return self.__class__(self.marks_dict, self.mark_type,
+                              instance or klass)
+
+    def __call__(self):
+        collect_into = self.mark_type.collect_into
+        setattr(self.owner, collect_into, OrderedDict())
+        for key, mark in self.marks_dict.items():
             try:
-                # build mark
-                build = mark_type.build(mark, all_marks, owner)
+                built = self.mark_type.build(mark, self.owner, self.marks_dict)
             except SkipMark:
                 continue
-            collect_into = mark_type.collect_into # where to store mark
-            if callable(collect_into):
-                collect_into = collect_into(mark)
+            getattr(self.owner, collect_into)[key] = built
 
-            if collect_into not in created_attrs:
-                created_attrs.add(collect_into)
-                setattr(owner, collect_into, OrderedDict([(key, build)]))
-            else:
-                getattr(owner, collect_into)[key] = build
+    @property
+    def lazy(self):
+        return any(isinstance(mark, lazy)
+                   for mark in self.marks_dict.values())
 
-
-class declare(Mark):
-    '''Lazy declaration.'''
-
-    func = None
-
-    def collect_into(self):
-        mark = self.evaluated
-        if self.mark_type:
-            mark_type = self.mark_type
-        elif Mark in mark.__class__.__mro__:
-            mark_type = mark.__class__
-        else:
-            mark_type = getattr(self.owner, 'default_mark', Mark)
-        collect_into = mark_type.collect_into # where to store mark
-        if callable(collect_into):
-            return collect_into(mark)
-        return collect_into
-
-    def build(self, marks, owner):
-        self.evaluated = self.func(owner)
-        self.owner = owner
-        if self.mark_type:
-            return self.mark_type.build(self.evaluated, marks, owner)
-        return self.evaluated
-
-    def __init__(self, mark_type=None):
-        self.mark_type = mark_type
-
-    def __call__(self, func):
-        self.func = func
-        return self
 
 class Declared(metaclass=DeclaredMeta):
     pass

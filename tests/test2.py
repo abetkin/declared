@@ -1,5 +1,5 @@
 from time import strptime, struct_time
-from declared import Mark, DeclaredMeta, SkipMark
+from declared import Mark, Declared, SkipMark
 
 class ParseError(Exception):
     pass
@@ -42,21 +42,22 @@ class time(Mark):
     def __init__(self, value):
         self.value = value
 
-    def build(mark, marks, owner):
+    @classmethod
+    def build(cls, mark, marks, owner):
+        if isinstance(mark, Time):
+            return mark
         if isinstance(mark, str):
             try:
                 return Time.parse(mark)
             except ParseError:
                 raise SkipMark
-        if isinstance(mark, Time):
-            return mark
         return Time.parse(mark.value)
 
 time.register(str)
 time.register(Time)
 
-class DailyRoutine(metaclass=DeclaredMeta):
-    default_mark = time
+class DailyRoutine(Declared, extract=time):
+    pass
 
 class MyDailyRoutine(DailyRoutine):
     breakfast = '9:00'
