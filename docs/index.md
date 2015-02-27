@@ -38,7 +38,7 @@ The simplest one: let's extract all numbers.
         b = a + 1
         c = 'not an int'
     
-`extract` keyword says marks are `Int` instances (`Mark` is default).          
+`extract` keyword says the marks are `Int` instances (`Mark` is default).          
 `collect_into` specifies the attribute name we want to collect the marks into.
     
     >>> MyAttrs._ints
@@ -58,8 +58,9 @@ The second example deals with the declaration of the points of time:
         def __init__(self, value):
             self.value = value
 
-        def build(self, marks, owner):
-            return strptime(self.value, '%H:%M')
+        @classmethod
+        def build(cls, mark, *args):
+            return strptime(mark.value, '%H:%M')
 
 And then use it:
 

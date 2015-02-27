@@ -176,21 +176,23 @@ Then we define the class for filter mark:
 
 Here is how we can declare a container with filters in it:
 
-    from declare import Declared
+```python
+from declare import Declared
 
-    class Filter(Declared, extract=qsfilter):
+class Filter(Declared, extract=qsfilter):
+
+    @qsfilter
+    def take_one(queryset):
+        return queryset[:1]
     
-        @qsfilter
-        def take_one(queryset):
-            return queryset[:1]
-        
-        text = Q(question_text__icontains='what')
-    
-    >>> filters = Filters._declared_filters
-    >>> filters
-    OrderedDict([('take_one', take one), ('text', Q: question_text__icontains=what)])
-    >>> filters['take_one'].filter(Question.objects.all())
-    [<Question: What's up>]
+    text = Q(question_text__icontains='what')
+
+>>> filters = Filters._declared_filters
+>>> filters
+OrderedDict([('take_one', take one), ('text', Q: question_text__icontains=what)])
+>>> filters['take_one'].filter(Question.objects.all())
+[<Question: What's up>]
+```
 
 `Question` is a django model taken from the official [tutorial](https://docs.djangoproject.com/en/1.7/intro/tutorial01/#creating-models).
 
