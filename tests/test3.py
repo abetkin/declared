@@ -1,5 +1,5 @@
 from collections import OrderedDict
-from declared import Mark, DeclaredMeta
+from declared import Mark, Declared
 
 class serializers_Field:
     pass
@@ -13,12 +13,10 @@ class field(Mark):
             return True
         return NotImplemented
 
-class Serializer(metaclass=DeclaredMeta):
-    default_mark = field
 
 from util import case
 
-class Person(Serializer):
+class Person(Declared, extract=field):
     name = serializers_Field()
     age = serializers_Field()
 

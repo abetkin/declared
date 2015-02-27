@@ -30,12 +30,23 @@ class DeclaredMeta(type):
     and then removes from the class namespace.
     '''
 
+    mark_type = Mark
+
     @classmethod
     def __prepare__(metacls, name, bases, **kwds):
         return OrderedDict()
 
-    def __new__(cls, name, bases, namespace, extract=Mark):
-        cls.extract_type = extract
+    @property
+    def mark_type(self):
+        return self.process_declared.mark_type
+
+    def __new__(cls, name, bases, namespace, extract=None):
+        for base in bases:
+            if extract:
+                break
+            extract = getattr(base, 'mark_type', None)
+        else:
+            extract = extract or Mark
         marks_dict = OrderedDict()
         for key, obj in namespace.items():
             if not isinstance(obj, (extract, lazy)):
@@ -50,32 +61,43 @@ class DeclaredMeta(type):
         for _name in marks_dict:
             del namespace[_name]
 
-        lazy_marks = [k for k,v in marks_dict.items()
-                      if isinstance(v, lazy)]
-        if lazy_marks:
-            def process_declared(owner):
-                for name in lazy_marks:
-                    marks_dict[name] = marks_dict[name].func(owner)
-                return cls._process_declared(owner, marks_dict)
+        namespace['process_declared'] = ProcessDeclared(marks_dict, extract)
 
-            namespace['process_declared'] = process_declared
+        return super().__new__(cls, name, bases, namespace)
 
-        klass = type.__new__(cls, name, bases, namespace)
-        if not lazy_marks:
-            cls._process_declared(klass, marks_dict)
 
-        return klass
+    def __init__(cls, *args, extract=None):
+        if not cls.process_declared.lazy:
+            cls.process_declared()
+        return super().__init__(*args)
 
-    def __init__(cls, *args, extract=Mark):
-        return type.__init__(cls, *args)
 
-    @classmethod
-    def _process_declared(cls, owner, marks_dict):
-        collect_into = cls.extract_type.collect_into
-        setattr(owner, collect_into, OrderedDict())
-        for key, mark in marks_dict.items():
-            built = cls.extract_type.build(mark, owner, marks_dict)
-            getattr(owner, collect_into)[key] = built
+class ProcessDeclared:
+
+    def __init__(self, marks_dict, mark_type,  owner=None):
+        self.marks_dict = marks_dict
+        self.mark_type = mark_type
+        self.owner = owner
+
+    def __get__(self, instance, klass):
+        return self.__class__(self.marks_dict, self.mark_type,
+                              instance or klass)
+
+    def __call__(self):
+        collect_into = self.mark_type.collect_into
+        setattr(self.owner, collect_into, OrderedDict())
+        for key, mark in self.marks_dict.items():
+            try:
+                built = self.mark_type.build(mark, self.owner, self.marks_dict)
+            except SkipMark:
+                continue
+            getattr(self.owner, collect_into)[key] = built
+
+    @property
+    def lazy(self):
+        return any(isinstance(mark, lazy)
+                   for mark in self.marks_dict.values())
+
 
 class Declared(metaclass=DeclaredMeta):
     pass
