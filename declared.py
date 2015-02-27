@@ -18,7 +18,7 @@ class Mark(metaclass=ABCMeta):
         return mark
 
 
-class lazy(Mark):
+class lazy(metaclass=ABCMeta):
 
     def __init__(self, func):
         self.func = func
@@ -37,8 +37,8 @@ class DeclaredMeta(type):
         return OrderedDict()
 
     @property
-    def mark_type(self):
-        return self.process_declared.mark_type
+    def mark_type(cls):
+        return cls.process_declared.mark_type
 
     def __new__(cls, name, bases, namespace, extract=None):
         for base in bases:
@@ -56,10 +56,6 @@ class DeclaredMeta(type):
             if obj in marks_dict.values():
                 obj = copy(obj)
             marks_dict[key] = obj
-
-        # clear the namespace
-        for _name in marks_dict:
-            del namespace[_name]
 
         namespace['process_declared'] = ProcessDeclared(marks_dict, extract)
 
@@ -84,6 +80,8 @@ class ProcessDeclared:
                               instance or klass)
 
     def __call__(self):
+        for key in self.lazy:
+            self.marks_dict[key] = self.marks_dict[key].func(self.owner)
         collect_into = self.mark_type.collect_into
         setattr(self.owner, collect_into, OrderedDict())
         for key, mark in self.marks_dict.items():
@@ -91,12 +89,13 @@ class ProcessDeclared:
                 built = self.mark_type.build(mark, self.owner, self.marks_dict)
             except SkipMark:
                 continue
+            setattr(self.owner, key, built)
             getattr(self.owner, collect_into)[key] = built
 
     @property
     def lazy(self):
-        return any(isinstance(mark, lazy)
-                   for mark in self.marks_dict.values())
+        return tuple(k for k, v in self.marks_dict.items()
+                     if isinstance(v, lazy))
 
 
 class Declared(metaclass=DeclaredMeta):
