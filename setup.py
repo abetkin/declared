@@ -8,7 +8,7 @@ setup(
 
     # There are various approaches to referencing the version. For a discussion,
     # see http://packaging.python.org/en/latest/tutorial.html#version
-    version='0.1',
+    version='0.2',
 
     description="declared",
     long_description="declared",
