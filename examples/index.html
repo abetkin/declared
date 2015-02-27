@@ -274,7 +274,7 @@ Q: key=value
 qsfilter.register(Q)
 </code></pre>
 <p>Here is how we can declare a container with filters in it:</p>
-<pre><code>from declare import Declared
+<pre><code class="python">from declare import Declared
 
 class Filter(Declared, extract=qsfilter):
 
@@ -290,6 +290,7 @@ OrderedDict([('take_one', take one), ('text', Q: question_text__icontains=what)]
 &gt;&gt;&gt; filters['take_one'].filter(Question.objects.all())
 [&lt;Question: What's up&gt;]
 </code></pre>
+
 <p><code>Question</code> is a django model taken from the official <a href="https://docs.djangoproject.com/en/1.7/intro/tutorial01/#creating-models">tutorial</a>.</p>
 <p>That was similar to what we've done before and not very interesting. Now let's try to aggregate filters.
 For example, here is what can be done for combining with OR &amp; AND operations:</p>

@@ -145,7 +145,7 @@ class MyAttrs(Declared, extract=Int):
     b = a + 1
     c = 'not an int'
 </code></pre>
-<p><code>extract</code> keyword says marks are <code>Int</code> instances (<code>Mark</code> is default).        <br />
+<p><code>extract</code> keyword says the marks are <code>Int</code> instances (<code>Mark</code> is default).        <br />
 <code>collect_into</code> specifies the attribute name we want to collect the marks into.</p>
 <pre><code>&gt;&gt;&gt; MyAttrs._ints
 OrderedDict([('a', 1), ('b', 2)])
@@ -162,8 +162,9 @@ class Time(Mark):
     def __init__(self, value):
         self.value = value
 
-    def build(self, marks, owner):
-        return strptime(self.value, '%H:%M')
+    @classmethod
+    def build(cls, mark, *args):
+        return strptime(mark.value, '%H:%M')
 </code></pre>
 <p>And then use it:</p>
 <pre><code>class DailyRoutine(Declared, extract=Time):
