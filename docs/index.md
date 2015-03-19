@@ -7,7 +7,7 @@ Class based declarations.
 ## Overview
 
 **declared** a small (< 100 SLOC) python module aiming to solve one simple problem:
-extracting from the class declaration instances of the specified class and forming an `OrderedDict`
+extracting from the class declaration instances of the specified type and forming an `OrderedDict`
 out of them.
 
 **Note:** For those who have used `django-rest-framework`: there you can define fields as attributes of `Serializer` class.
