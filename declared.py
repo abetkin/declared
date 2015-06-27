@@ -1,27 +1,21 @@
-from copy import copy
 from collections import OrderedDict
 from abc import ABCMeta
+
+from six import add_metaclass
 
 class SkipMark(Exception):
     pass
 
-class Mark(metaclass=ABCMeta):
+@add_metaclass(ABCMeta)
+class Mark(object):
 
     collect_into = '_declared_marks'
 
     def __init__(self, **kwds):
         self.__dict__.update(kwds)
 
-    @classmethod
-    def build(cls, mark, owner, marks_dict):
-        # can raise SkipMark
-        return mark
-
-
-class lazy(metaclass=ABCMeta):
-
-    def __init__(self, func):
-        self.func = func
+    def build(self, owner):
+        return self
 
 
 class DeclaredMeta(type):
@@ -30,73 +24,43 @@ class DeclaredMeta(type):
     and then removes from the class namespace.
     '''
 
-    mark_type = Mark
-
     @classmethod
     def __prepare__(metacls, name, bases, **kwds):
         return OrderedDict()
 
-    @property
-    def mark_type(cls):
-        return cls.process_declared.mark_type
-
-    def __new__(cls, name, bases, namespace, extract=None):
-        for base in bases:
-            if extract:
-                break
-            extract = getattr(base, 'mark_type', None)
+    def __new__(cls, name, bases, namespace):
+        extract = namespace.get('__extract__', ())
+        to_extract = [Mark]
+        if not isinstance(extract, (tuple, list)):
+            to_extract.append(extract)
         else:
-            extract = extract or Mark
+            to_extract.extend(extract)
+
         marks_dict = OrderedDict()
         for key, obj in namespace.items():
-            if not isinstance(obj, (extract, lazy)):
+            if not isinstance(obj, tuple(to_extract)):
                 continue
-            # make clones if necessary so that all marks
-            # were different objects
-            if obj in marks_dict.values():
-                obj = copy(obj)
             marks_dict[key] = obj
 
-        namespace['process_declared'] = ProcessDeclared(marks_dict, extract)
+        klass = super(DeclaredMeta, cls).__new__(cls, name, bases, namespace)
+        for key, obj in marks_dict.items():
+            if isinstance(obj, Mark):
+                collect_into = obj.collect_into
+                obj = obj.build(klass)
+            else:
+                collect_into = Mark.collect_into
+                # collect_into = getattr(klass, 'collect_declared_into', None) or Mark.collect_into
+            setattr(klass, key, obj)
+            if not getattr(klass, collect_into, None):
+                setattr(klass, collect_into, OrderedDict())
+            getattr(klass, collect_into)[key] = obj
+        return klass
 
-        return super().__new__(cls, name, bases, namespace)
-
-
-    def __init__(cls, *args, extract=None):
-        if not cls.process_declared.lazy:
-            cls.process_declared()
-        return super().__init__(*args)
-
-
-class ProcessDeclared:
-
-    def __init__(self, marks_dict, mark_type,  owner=None):
-        self.marks_dict = marks_dict
-        self.mark_type = mark_type
-        self.owner = owner
-
-    def __get__(self, instance, klass):
-        return self.__class__(self.marks_dict, self.mark_type,
-                              instance or klass)
-
-    def __call__(self):
-        for key in self.lazy:
-            self.marks_dict[key] = self.marks_dict[key].func(self.owner)
-        collect_into = self.mark_type.collect_into
-        setattr(self.owner, collect_into, OrderedDict())
-        for key, mark in self.marks_dict.items():
-            try:
-                built = self.mark_type.build(mark, self.owner, self.marks_dict)
-            except SkipMark:
-                continue
-            setattr(self.owner, key, built)
-            getattr(self.owner, collect_into)[key] = built
-
-    @property
-    def lazy(self):
-        return tuple(k for k, v in self.marks_dict.items()
-                     if isinstance(v, lazy))
+    def __init__(cls, *args, **kwds):
+        kwds.pop('extract', None)
+        super(DeclaredMeta, cls).__init__(*args)
 
 
-class Declared(metaclass=DeclaredMeta):
+@add_metaclass(DeclaredMeta)
+class Declared(object):
     pass
