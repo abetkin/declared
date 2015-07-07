@@ -17,7 +17,8 @@ class DeclaredMeta(ABCMeta):
         return OrderedDict()
 
     def __new__(cls, name, bases, namespace):
-        declared_types = namespace.get('declared_types', ())
+        klass = super(DeclaredMeta, cls).__new__(cls, name, bases, namespace)
+        declared_types = getattr(klass, 'declared_types', ())
         marks_dict = OrderedDict()
         for key, obj in namespace.items():
             if not isinstance(obj, tuple(declared_types)) \
@@ -26,7 +27,7 @@ class DeclaredMeta(ABCMeta):
             obj.attr_name = key
             marks_dict[key] = obj
 
-        klass = super(DeclaredMeta, cls).__new__(cls, name, bases, namespace)
+        
         klass._declarations = OrderedDict()
         for key, obj in marks_dict.items():
             build = getattr(klass, 'build_declaration', None)
@@ -58,11 +59,11 @@ class Declared(object):
     def _filter_declarations(self, declarations):
         return declarations
     
-    def as_dict(self):
-        raise NotImplementedError
-    
-    def __repr__(self):
-        return repr(self.as_dict())
+    # def as_dict(self):
+    #     raise NotImplementedError
+    # 
+    # def __repr__(self):
+    #     return repr(self.as_dict())
     
     @classmethod
     def process_object(cls, obj, *args, **kwargs):
