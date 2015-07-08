@@ -17,12 +17,12 @@ class DeclaredFilters(Declared):
 
 class afilter(object):
     
-    is_declared = True
+    is_declaration = True
     
     def __init__(self, obj):
         self.obj = obj
     
-    def process_declared(self, qs):
+    def instantiate(self, qs):
         if isinstance(self.obj, Q):
             return qs.filter(self.obj)
         assert callable(self.obj)
