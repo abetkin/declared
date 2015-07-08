@@ -1,3 +1,6 @@
 extract=function
 
 mark_type - customize
+
+is_declaration - callable
+idea: when testing, provide just "deser-d" objects 

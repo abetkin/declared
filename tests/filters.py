@@ -22,7 +22,7 @@ class afilter(object):
     def __init__(self, obj):
         self.obj = obj
     
-    def process_declared(self, qs): # -> result
+    def process_declared(self, qs):
         if isinstance(self.obj, Q):
             return qs.filter(self.obj)
         assert callable(self.obj)
@@ -32,17 +32,21 @@ from collections import OrderedDict
 
 class ReducedFilters(DeclaredFilters):
 
+    def process_declaration(self, mark):
+        # probably it doesn't define respective method
+        pass
+    
+
     @classmethod
     def process_declared(cls, qs):
         self = cls()
-        # with ipdb.launch_ipdb_on_exception():
         result = OrderedDict()
         for attr, mark in self._declarations.items():
             value_out = mark.process_declared(qs)
             result[attr] = value_out
         self.__dict__.update(result)
         self.filters = result
-        return self # _odict
+        return self
 
     @property
     def queryset(self):
@@ -58,6 +62,7 @@ class qor(ReducedFilters):
 
 class CascadeFilter(DeclaredFilters):
 
+    # or just callable ??
     @classmethod
     def process_declared(cls, objects):
         self = cls()
@@ -74,3 +79,12 @@ class CascadeFilter(DeclaredFilters):
         self.queryset = objects
         
         return self
+
+
+class GenericDeclared(Declared):
+
+    def process_mark(self, mark, processed, marks): # , qs # data, kwargs
+
+        qs = processed.values()[-1]
+        return super(GenericDeclared, self).process_mark(mark, processed, marks)
+

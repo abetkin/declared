@@ -44,17 +44,20 @@ class DeclaredMeta(ABCMeta):
 @add_metaclass(DeclaredMeta)
 class Declared(object):
     
-    is_declared = True
+    is_declaration = True
     
-    def process_declared(self, *args, **kw):
-        raise NotImplementedError
+    @classmethod
+    def instantiate(cls, *args, **kw):
+        return cls(*args, **kw)
     
-    def __init__(self, declarations_from=None):
-        if declarations_from is None:
-            return
-        declarations = declarations_from._declarations
-        declarations = self._filter_declarations(declarations)
-        self._declarations = declarations
+
+
+
+
+
+        # declarations = declarations_from._declarations
+        # declarations = self._filter_declarations(declarations)
+        # self._declarations = declarations
     
     def _filter_declarations(self, declarations):
         return declarations
@@ -70,3 +73,23 @@ class Declared(object):
         inst = cls(declarations_from=obj)
         result = inst.process_declared(*args, **kwargs)
         obj.__dict__.update(result.as_dict())
+        
+
+class Instantiate(object):
+    '''A mixin.
+    '''
+    
+    is_declaration = True
+    
+    @classmethod
+    def instantiate(cls, *args, **kw):
+        return cls(*args, **kw)
+    
+    def __init__(self, *args, **kw):
+        declarations_from = kw.pop('declarations_from')
+    
+    def process_declaration(self, current, processed, _all):
+
+        qs = processed.values()[-1]
+        # return super(GenericDeclared, self).process_mark(mark, processed, marks)
+        # 
