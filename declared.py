@@ -22,7 +22,7 @@ class DeclaredMeta(ABCMeta):
         marks_dict = OrderedDict()
         for key, obj in namespace.items():
             if not isinstance(obj, tuple(declared_types)) \
-                    and not getattr(obj, 'is_declared', None):
+                    and not getattr(obj, 'is_declaration', None):
                 continue
             obj.attr_name = key
             marks_dict[key] = obj
@@ -46,50 +46,30 @@ class Declared(object):
     
     is_declaration = True
     
-    @classmethod
-    def instantiate(cls, *args, **kw):
-        return cls(*args, **kw)
-    
-
-
-
-
-
-        # declarations = declarations_from._declarations
-        # declarations = self._filter_declarations(declarations)
-        # self._declarations = declarations
-    
-    def _filter_declarations(self, declarations):
+    # @classmethod
+    # def evaluate(cls, *args, **kw):
+    #     return cls(*args, **kw)
+    # 
+    def filter_declarations(self, declarations):
         return declarations
     
-    # def as_dict(self):
-    #     raise NotImplementedError
-    # 
-    # def __repr__(self):
-    #     return repr(self.as_dict())
-    
-    @classmethod
-    def process_object(cls, obj, *args, **kwargs):
-        inst = cls(declarations_from=obj)
-        result = inst.process_declared(*args, **kwargs)
-        obj.__dict__.update(result.as_dict())
-        
-
-class Instantiate(object):
-    '''A mixin.
-    '''
-    
-    is_declaration = True
-    
-    @classmethod
-    def instantiate(cls, *args, **kw):
-        return cls(*args, **kw)
-    
     def __init__(self, *args, **kw):
-        declarations_from = kw.pop('declarations_from')
+        # ipdb.set_trace()
+        declarations_from = kw.pop('declarations_from', None)
+        if declarations_from: # declared_in ?
+            self._declarations = declarations_from._declarations
+        self._declarations = self.filter_declarations(self._declarations)
+        evaluate_it = self.evaluate_it(*args, **kw)
+        self.__dict__.update(evaluate_it)
     
-    def process_declaration(self, current, processed, _all):
+    def evaluate_it(self, *args, **kw):
+        '''default implementation
+        '''
+        for name, decl in self._declarations.items():
+            yield name, decl(*args, **kw)
 
-        qs = processed.values()[-1]
-        # return super(GenericDeclared, self).process_mark(mark, processed, marks)
-        # 
+    def get_declarations(self):
+        def items():
+            for name in self._declarations:
+                yield name, getattr(self, name)
+        return OrderedDict(items())

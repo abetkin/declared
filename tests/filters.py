@@ -22,7 +22,7 @@ class afilter(object):
     def __init__(self, obj):
         self.obj = obj
     
-    def instantiate(self, qs):
+    def __call__(self, qs):
         if isinstance(self.obj, Q):
             return qs.filter(self.obj)
         assert callable(self.obj)
@@ -32,25 +32,12 @@ from collections import OrderedDict
 
 class ReducedFilters(DeclaredFilters):
 
-    def process_declaration(self, mark):
-        # probably it doesn't define respective method
-        pass
-    
-
-    @classmethod
-    def process_declared(cls, qs):
-        self = cls()
-        result = OrderedDict()
-        for attr, mark in self._declarations.items():
-            value_out = mark.process_declared(qs)
-            result[attr] = value_out
-        self.__dict__.update(result)
-        self.filters = result
-        return self
-
     @property
     def queryset(self):
-        return reduce(self.operation, self.filters.values())
+        def filters():
+            for name in self._declarations:
+                yield getattr(self, name)
+        return reduce(self.operation, filters())
 
 
 class qand(ReducedFilters):
@@ -62,29 +49,9 @@ class qor(ReducedFilters):
 
 class CascadeFilter(DeclaredFilters):
 
-    # or just callable ??
-    @classmethod
-    def process_declared(cls, objects):
-        self = cls()
-        result = OrderedDict()
-        for attr, mark in self._declarations.items():
-            processed = mark.process_declared(objects)
-            if isinstance(processed, QuerySet):
-                objects = processed
-            else:
-                objects = processed.queryset
-            result[attr] = processed
-        self.__dict__.update(result)
-        self.filters = result
-        self.queryset = objects
-        
-        return self
-
-
-class GenericDeclared(Declared):
-
-    def process_mark(self, mark, processed, marks): # , qs # data, kwargs
-
-        qs = processed.values()[-1]
-        return super(GenericDeclared, self).process_mark(mark, processed, marks)
-
+    def evaluate_it(self, queryset):
+        for name, filtr in self._declarations.items():
+            filtered = filtr.evaluate(queryset)
+            yield name, filtered
+            queryset = filtered if isinstance(filtered, QuerySet) \
+                                else filtered.queryset

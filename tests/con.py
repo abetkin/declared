@@ -9,21 +9,21 @@ import ipdb
 
 
 
-class field(object):
-    
-    is_declared = True
-
-    def __init__(self, transform):
-        self.transform = transform
-
-    # def process(self, value):
-    #     return self.transform(value)
-
-    def process_declared(self, value):
-        result = self.transform(value)
-        # setattr(container, self.attr_name, result)
-        return result
-
+# class field(object):
+#     
+#     is_declared = True
+# 
+#     def __init__(self, transform):
+#         self.transform = transform
+# 
+#     # def process(self, value):
+#     #     return self.transform(value)
+# 
+#     def process_declared(self, value):
+#         result = self.transform(value)
+#         # setattr(container, self.attr_name, result)
+#         return result
+# 
 
 # class List(field):
 #
@@ -32,29 +32,14 @@ class field(object):
 
 class Fields(Declared):
 
-    # @classmethod
-    @classmethod
-    def build_declaration(cls, owner):
-        # can raise SkipMark
-        # print 'to build:', mark
-        return cls()
 
-    # @classmethod
-    def process_declared(self, data):
-        with ipdb.launch_ipdb_on_exception():
-            result = OrderedDict()
-            for attr, mark in self._declarations.items():
-                # ipdb.set_trace()
-                value_in = data[attr]
-                value_out = mark.process_declared(value_in)
-                result[attr] = value_out
-            self.__dict__.update(result)
-            self._odict = result
-            return self # _odict
-                # setattr(container, attr, value_out)
+    def evaluate_it(self, data):
+        for name, decl in self._declarations.items():
+            # ipdb.set_trace()
+            yield name, decl(data[name])
 
-    def as_dict(self):
-        return self._odict
+    def __repr__(self):
+        return self.get_declarations()
 
     # is_declared = False
     # process -> process_declared
@@ -68,8 +53,8 @@ class Fields(Declared):
 # ipdb.set_trace()
 class fields(Declared):
 
-    name = field(str)
-    age = field(int)
+    name = str
+    age = int
 
     class assistant(Fields):
         name = field(str)
