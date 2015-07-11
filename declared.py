@@ -3,38 +3,39 @@ from abc import ABCMeta
 
 from six import add_metaclass
 
-import ipdb
+# import ipdb
 
-
-'''FIX: is_declaration on container
-'''
+from itertools import chain
 
 class DeclaredMeta(ABCMeta):
-    '''
-    The metaclass collects `Mark` instances from the classdict
-    and then removes from the class namespace.
-    '''
 
     @classmethod
     def __prepare__(metacls, name, bases, **kwds):
         return OrderedDict()
 
-
-    # TODO remove is_declaration attr
     def __new__(cls, name, bases, namespace):
+
+        @classmethod
+        def _is_declaration(cls, name, obj):
+            declared_types = getattr(cls, 'declared_types', ())
+            if isinstance(obj, declared_types):
+                return True
+            if hasattr(cls, 'is_declaration') and cls.is_declaration(name, obj):
+                return True
+            return getattr(obj, '__declaration__', None)
+
+        namespace['_is_declaration'] = _is_declaration
         klass = super(DeclaredMeta, cls).__new__(cls, name, bases, namespace)
-        declared_types = getattr(klass, 'declared_types', ())
-        declared_types = tuple(declared_types)
-        marks_dict = OrderedDict()
-        for key, obj in namespace.items():
-            if not isinstance(obj, declared_types) and \
-                    not klass.is_declaration(obj):
-                continue
-            obj.attr_name = key
-            marks_dict[key] = obj
         
+        declarations_dict = OrderedDict()
+        for key, obj in namespace.items():
+            if not klass._is_declaration(key, obj):
+                continue
+            # obj.attr_name = key
+            declarations_dict[key] = obj
+
         klass._declarations = OrderedDict()
-        for key, obj in marks_dict.items():
+        for key, obj in declarations_dict.items():
             build = getattr(klass, 'build_declaration', None)
             if build:
                 obj = build(obj)
@@ -48,19 +49,23 @@ class DeclaredMeta(ABCMeta):
 
 @add_metaclass(DeclaredMeta)
 class Declared(object):
-    
-    is_declaration = True
-    
-    def filter_declarations(self, declarations):
-        return declarations
+    pass
+
+
+class ProcessDeclared(Declared):
+    __declaration__ = True
     
     def __init__(self, *args, **kw):
         declared_in = kw.pop('declared_in', None)
         if declared_in:
-            self._declarations = declared_in._declarations
-        self._declarations = self.filter_declarations(self._declarations)
-        evaluate_it = self.evaluate_it(*args, **kw)
+            filter_func = lambda key: self._is_declaration(*key)
+            self._declarations = OrderedDict(
+                filter(filter_func, declared_in._declarations.items())
+            )
+        evaluate_it = list(self.evaluate_it(*args, **kw))
         self.__dict__.update(evaluate_it)
+        if declared_in:
+            declared_in.__dict__.update(evaluate_it)
     
     def evaluate_it(self, *args, **kw):
         '''default implementation

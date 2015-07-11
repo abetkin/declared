@@ -17,7 +17,7 @@ class DeclaredFilters(Declared):
 
 class afilter(object):
     
-    is_declaration = True
+    __declaration__ = True
     
     def __init__(self, obj):
         self.obj = obj

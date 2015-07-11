@@ -1,5 +1,5 @@
 
-from declared import Declared
+from declared import Declared, ProcessDeclared
 
 from collections import OrderedDict
 
@@ -30,16 +30,18 @@ import ipdb
 #     def prosess(self, value, container=None)
 
 
-class Fields(Declared):
+class Fields(ProcessDeclared):
 
+    @classmethod
+    def is_declaration(cls, name, obj):
+        return isinstance(obj, type) or getattr(obj, 'transformer', None)
 
     def evaluate_it(self, data):
         for name, decl in self._declarations.items():
-            # ipdb.set_trace()
             yield name, decl(data[name])
 
     def __repr__(self):
-        return self.get_declarations()
+        return repr(self.get_declarations())
 
     # is_declared = False
     # process -> process_declared
@@ -51,7 +53,7 @@ class Fields(Declared):
     #     return NotImplemented
 
 # ipdb.set_trace()
-class fields(Declared):
+class fields(Fields):
 
     name = str
     age = int
@@ -60,17 +62,54 @@ class fields(Declared):
         name = str
         service = str
 
-        # is_mark = True
 
-    # assistant = is_mark(assistant)
+class MyJson(ProcessDeclared):
+
+    @classmethod
+    def is_declaration(cls, name, obj):
+        return name in cls.FIELDS
+
+    def name(obj):
+        return obj.name
+
+    def assistant(obj):
+        return obj.assistant.name
+
+    FIELDS = ['name', 'assistant']
 
 
-f = fields()
-res = Fields.process_object(f, {'name': 'Reena', 'age': 27,
+class Container(Declared):
+
+    declared_types = type,
+
+    name = str
+    age = int
+
+    class assistant(Fields):
+        name = str
+        service = str
+
+
+con = Container()
+
+# ipdb.set_trace()
+res = Fields({'name': 'Reena', 'age': 27,
                 'assistant': {
                     'name': 'Kate',
                     'service': 'private',
                 }
                 
-                })
+                }, declared_in=con)
+
+myjson = MyJson(con)
 # f.__dict__.update(res)
+
+
+
+class A(Declared):
+    declared_types = int,
+
+    age = 25
+
+class B(A):
+    height = 180
