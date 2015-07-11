@@ -6,6 +6,9 @@ from six import add_metaclass
 import ipdb
 
 
+'''FIX: is_declaration on container
+'''
+
 class DeclaredMeta(ABCMeta):
     '''
     The metaclass collects `Mark` instances from the classdict
@@ -16,17 +19,19 @@ class DeclaredMeta(ABCMeta):
     def __prepare__(metacls, name, bases, **kwds):
         return OrderedDict()
 
+
+    # TODO remove is_declaration attr
     def __new__(cls, name, bases, namespace):
         klass = super(DeclaredMeta, cls).__new__(cls, name, bases, namespace)
         declared_types = getattr(klass, 'declared_types', ())
+        declared_types = tuple(declared_types)
         marks_dict = OrderedDict()
         for key, obj in namespace.items():
-            if not isinstance(obj, tuple(declared_types)) \
-                    and not getattr(obj, 'is_declaration', None):
+            if not isinstance(obj, declared_types) and \
+                    not klass.is_declaration(obj):
                 continue
             obj.attr_name = key
             marks_dict[key] = obj
-
         
         klass._declarations = OrderedDict()
         for key, obj in marks_dict.items():
@@ -46,18 +51,13 @@ class Declared(object):
     
     is_declaration = True
     
-    # @classmethod
-    # def evaluate(cls, *args, **kw):
-    #     return cls(*args, **kw)
-    # 
     def filter_declarations(self, declarations):
         return declarations
     
     def __init__(self, *args, **kw):
-        # ipdb.set_trace()
-        declarations_from = kw.pop('declarations_from', None)
-        if declarations_from: # declared_in ?
-            self._declarations = declarations_from._declarations
+        declared_in = kw.pop('declared_in', None)
+        if declared_in:
+            self._declarations = declared_in._declarations
         self._declarations = self.filter_declarations(self._declarations)
         evaluate_it = self.evaluate_it(*args, **kw)
         self.__dict__.update(evaluate_it)

@@ -34,10 +34,8 @@ class ReducedFilters(DeclaredFilters):
 
     @property
     def queryset(self):
-        def filters():
-            for name in self._declarations:
-                yield getattr(self, name)
-        return reduce(self.operation, filters())
+        filters = self.get_declarations()
+        return reduce(self.operation, filters)
 
 
 class qand(ReducedFilters):

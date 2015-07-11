@@ -57,8 +57,8 @@ class fields(Declared):
     age = int
 
     class assistant(Fields):
-        name = field(str)
-        service = field(str)
+        name = str
+        service = str
 
         # is_mark = True
 
