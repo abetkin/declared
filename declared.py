@@ -5,8 +5,6 @@ from six import add_metaclass
 
 # import ipdb
 
-from itertools import chain
-
 class DeclaredMeta(ABCMeta):
 
     @classmethod
